@@ -49,9 +49,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="App\Classes\AntiCheat.cs" />
     <Compile Include="App\Classes\AuthZone\ClassicAuth.cs" />
     <Compile Include="App\Classes\AuthZone\ModernAuth.cs" />
     <Compile Include="App\Classes\AuthZone\Tokens.cs" />
+    <Compile Include="App\Classes\Global\NativeFunctions.cs" />
     <Compile Include="App\Classes\Global\URLs.cs" />
     <Compile Include="App\Classes\Hashes\SHA256.cs" />
     <Compile Include="App\Classes\ModNet\ModNetLinksCleanup.cs" />
@@ -63,8 +65,7 @@
     </Compile>
     <Compile Include="App\Classes\HWID.cs" />
     <Compile Include="App\Classes\Hashes\MD5.cs" />
-    <Compile Include="App\Classes\ModNetReloaded\ElectronModNet.cs" />
-    <Compile Include="App\Classes\ModNetReloaded\ModNetReloaded.cs" />
+    <Compile Include="App\Classes\ModNet\ModNetReloaded.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="App\Classes\Prompt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

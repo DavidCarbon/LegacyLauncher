@@ -1,8 +1,9 @@
-﻿using ClassicGameLauncher.App.Classes.Global;
+﻿using ClassicGameLauncher.App.Classes;
+using ClassicGameLauncher.App.Classes.Global;
 using ClassicGameLauncher.App.Classes.Hashes;
+using ClassicGameLauncher.App.Classes.ModNet;
 using GameLauncher.App.Classes;
 using GameLauncher.App.Classes.Auth;
-using GameLauncher.App.Classes.ModNetReloaded;
 using GameLauncherReborn;
 using SimpleJSON;
 using System;
@@ -18,19 +19,27 @@ using System.Windows.Forms;
 namespace ClassicGameLauncher
 {
     public partial class Form1 : Form {
+        /* START Login Checks */
         private bool _modernAuthSupport = false;
         private bool _ticketRequired;
+        /* END Login Checks */
 
         /* START ModNet Global Functions */
         public static String ModNetFileNameInUse = String.Empty;
         readonly Queue<Uri> modFilesDownloadUrls = new Queue<Uri>();
         bool isDownloadingModNetFiles = false;
-
         int CurrentModFileCount = 0;
         int TotalModFileCount = 0;
         /* END ModNet Global Functions */
 
+        /* START SpeedBug Timer */
+        private bool _gameKilledBySpeedBugCheck = false;
+        private int _nfswPid;
+        /* END SpeedBug Timer */
+
+        /* START GetServerInformation Cache */
         SimpleJSON.JSONNode result;
+        /* END GetServerInformation Cache  */
 
         public Form1() {
             InitializeComponent();
@@ -45,7 +54,7 @@ namespace ClassicGameLauncher
             var response = "";
             try {
                 WebClient wc = new WebClient();
-                string serverurl = "http://launcher.worldunited.gg/serverlist.txt";
+                string serverurl = "http://api2-sbrw.davidcarbon.download/serverlist.txt";
                 response = wc.DownloadString(serverurl);
             } catch (Exception) { }
 
@@ -197,8 +206,7 @@ namespace ClassicGameLauncher
         }
 
         public void launchGame() {
-            actionText.Text = "Launching game...";
-            Application.DoEvents();
+           
             ProcessStartInfo psi = new ProcessStartInfo();
 
             psi.WorkingDirectory = Directory.GetCurrentDirectory();
@@ -206,6 +214,133 @@ namespace ClassicGameLauncher
             psi.Arguments = "EU " + Tokens.IPAddress + " " + Tokens.LoginToken + " " + Tokens.UserId;
 
             Process.Start(psi);
+        }
+
+        private void LaunchGame(Form x)
+        {
+            actionText.Text = "Launching game...";
+            Application.DoEvents();
+
+            var args = "EU " + Tokens.IPAddress + " " + Tokens.LoginToken + " " + Tokens.UserId;
+            var psi = new ProcessStartInfo();
+
+
+            psi.WorkingDirectory = Directory.GetCurrentDirectory();
+            psi.FileName = "nfsw.exe";
+            psi.Arguments = args;
+
+            var nfswProcess = Process.Start(psi);
+            nfswProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
+
+            var processorAffinity = 0;
+            for (var i = 0; i < Math.Min(Math.Max(1, Environment.ProcessorCount), 8); i++)
+            {
+                processorAffinity |= 1 << i;
+            }
+
+            nfswProcess.ProcessorAffinity = (IntPtr)processorAffinity;
+
+            AntiCheat.process_id = nfswProcess.Id;
+
+            //TIMER HERE
+            int secondsToShutDown = (result["secondsToShutDown"].AsInt != 0) ? result["secondsToShutDown"].AsInt : 2 * 60 * 60;
+            System.Timers.Timer shutdowntimer = new System.Timers.Timer();
+            shutdowntimer.Elapsed += (x2, y2) =>
+            {
+                Process[] allOfThem = Process.GetProcessesByName("nfsw");
+
+                if (secondsToShutDown <= 0)
+                {
+                    foreach (var oneProcess in allOfThem)
+                    {
+                        Process.GetProcessById(oneProcess.Id).Kill();
+                    }
+                }
+
+                //change title
+
+                foreach (var oneProcess in allOfThem)
+                {
+                    long p = oneProcess.MainWindowHandle.ToInt64();
+                    TimeSpan t = TimeSpan.FromSeconds(secondsToShutDown);
+                    string secondsToShutDownNamed = string.Format("{0:D2}:{1:D2}:{2:D2}", t.Hours, t.Minutes, t.Seconds);
+
+                    if (secondsToShutDown == 0)
+                    {
+                        secondsToShutDownNamed = "Waiting for event to finish.";
+                    }
+
+                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + serverText.SelectedValue.ToString() + " | Launcher Build: " + ProductVersion + " | Force Restart In: " + secondsToShutDownNamed);
+                }
+
+                --secondsToShutDown;
+            };
+
+            shutdowntimer.Interval = 1000;
+            shutdowntimer.Enabled = true;
+
+            if (nfswProcess != null)
+            {
+                nfswProcess.EnableRaisingEvents = true;
+                _nfswPid = nfswProcess.Id;
+
+                nfswProcess.Exited += (sender2, e2) =>
+                {
+                    _nfswPid = 0;
+                    var exitCode = nfswProcess.ExitCode;
+
+                    if (_gameKilledBySpeedBugCheck == true) exitCode = 2137;
+
+                    if (exitCode == 0)
+                    {
+                        Application.Exit();
+                    }
+                    else
+                    {
+                        x.BeginInvoke(new Action(() =>
+                        {
+                            x.WindowState = FormWindowState.Normal;
+                            x.Opacity = 1;
+                            x.ShowInTaskbar = true;
+                            String errorMsg = "Game Crash with exitcode: " + exitCode.ToString() + " (0x" + exitCode.ToString("X") + ")";
+                            if (exitCode == -1073741819) errorMsg = "Game Crash: Access Violation (0x" + exitCode.ToString("X") + ")";
+                            if (exitCode == -1073740940) errorMsg = "Game Crash: Heap Corruption (0x" + exitCode.ToString("X") + ")";
+                            if (exitCode == -1073740791) errorMsg = "Game Crash: Stack buffer overflow (0x" + exitCode.ToString("X") + ")";
+                            if (exitCode == -805306369) errorMsg = "Game Crash: Application Hang (0x" + exitCode.ToString("X") + ")";
+                            if (exitCode == -1073741515) errorMsg = "Game Crash: Missing dependency files (0x" + exitCode.ToString("X") + ")";
+                            if (exitCode == -1073740972) errorMsg = "Game Crash: Debugger crash (0x" + exitCode.ToString("X") + ")";
+                            if (exitCode == -1073741676) errorMsg = "Game Crash: Division by Zero (0x" + exitCode.ToString("X") + ")";
+                            if (exitCode == 1) errorMsg = "The process nfsw.exe was killed via Task Manager";
+                            if (exitCode == 2137) errorMsg = "Launcher killed your game to prevent SpeedBugging.";
+                            if (exitCode == -3) errorMsg = "The Server was unable to resolve the request";
+                            if (exitCode == -4) errorMsg = "Another instance is already executed";
+                            if (exitCode == -5) errorMsg = "DirectX Device was not found. Please install GPU Drivers before playing";
+                            if (exitCode == -6) errorMsg = "Server was unable to resolve your request";
+                            //ModLoader
+                            if (exitCode == 2) errorMsg = "ModNet: Game was launched with invalid command line parameters.";
+                            if (exitCode == 3) errorMsg = "ModNet: .links file should not exist upon startup!";
+                            if (exitCode == 4) errorMsg = "ModNet: An Unhandled Error Appeared";
+                            actionText.Text = errorMsg.ToUpper();
+                            if (_nfswPid != 0)
+                            {
+                                try
+                                {
+                                    Process.GetProcessById(_nfswPid).Kill();
+                                }
+                                catch { /* ignored */ }
+                            }
+
+                            DialogResult restartApp = MessageBox.Show(null, errorMsg + "\nWould you like to restart the launcher?", "GameLauncher", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                            if (restartApp == DialogResult.Yes)
+                            {
+                                Application.Restart();
+                                Application.ExitThread();
+                            }
+                            Application.Exit();
+                        }));
+                    }
+                };
+            }
         }
 
         private string FormatFileSize(long byteCount) {
@@ -322,7 +457,8 @@ namespace ClassicGameLauncher
                     }
                     else
                     {
-                        launchGame();
+                        LaunchGame(null);
+                        //launchGame();
                     }
                 } catch (Exception ex) {
                     MessageBox.Show(ex.Message);
@@ -331,7 +467,8 @@ namespace ClassicGameLauncher
             else 
             {
                 //Yikes from me Coders - DavidCarbon
-                launchGame();
+                LaunchGame(null);
+                //launchGame();
             }
         }
 
@@ -355,7 +492,8 @@ namespace ClassicGameLauncher
                         isDownloadingModNetFiles = false;
                         if (modFilesDownloadUrls.Any() == false)
                         {
-                            launchGame();
+                            LaunchGame(null);
+                            //launchGame();
                         }
                         else
                         {

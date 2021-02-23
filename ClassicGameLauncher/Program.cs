@@ -30,11 +30,7 @@ namespace ClassicGameLauncher
                 return;
             }
 
-            if (
-                SHA.HashFile("nfsw.exe") != "7C0D6EE08EB1EDA67D5E5087DDA3762182CDE4AC" ||
-                SHA.HashFile("nfsw.exe") != "DB9287FB7B0CDA237A5C3885DD47A9FFDAEE1C19" ||
-                SHA.HashFile("nfsw.exe") != "E69890D31919DE1649D319956560269DB88B8F22"
-                )
+            if (SHA.HashFile("nfsw.exe") != "7C0D6EE08EB1EDA67D5E5087DDA3762182CDE4AC")
             { 
                 MessageBox.Show("Invalid file was detected, please restore original nfsw.exe", "LegacyLauncher", MessageBoxButtons.OK, MessageBoxIcon.Error);
             } 

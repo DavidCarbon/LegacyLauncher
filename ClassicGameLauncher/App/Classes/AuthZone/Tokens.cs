@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Text;
 
 namespace GameLauncher.App.Classes.Auth
 {
-    class Tokens {
+    class Tokens 
+    {
         public static String UserId         = String.Empty;
         public static String Warning        = String.Empty;
         public static String Error          = String.Empty;

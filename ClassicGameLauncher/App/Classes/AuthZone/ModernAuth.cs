@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 
-namespace GameLauncher.App.Classes.Auth {
+namespace GameLauncher.App.Classes.Auth
+{
     class ModernAuth {
         private static int _serverErrorcode;
         private static string _serverErrormsg;

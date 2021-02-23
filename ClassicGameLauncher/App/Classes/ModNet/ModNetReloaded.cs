@@ -1,11 +1,9 @@
 ﻿using GameLauncherReborn;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace GameLauncher.App.Classes.ModNetReloaded {
+namespace ClassicGameLauncher.App.Classes.ModNet
+{
     public class MainJson {
         public string basePath { get; set; }
         public string serverID { get; set; }
