@@ -62,13 +62,13 @@
       <DependentUpon>Login.cs</DependentUpon>
     </Compile>
     <Compile Include="App\Classes\HWID.cs" />
-    <Compile Include="App\Classes\MD5.cs" />
+    <Compile Include="App\Classes\Hashes\MD5.cs" />
     <Compile Include="App\Classes\ModNetReloaded\ElectronModNet.cs" />
     <Compile Include="App\Classes\ModNetReloaded\ModNetReloaded.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="App\Classes\Prompt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="App\Classes\SHA.cs" />
+    <Compile Include="App\Classes\Hashes\SHA.cs" />
     <Compile Include="App\Classes\SimpleJSON.cs" />
     <Compile Include="WebRequest.cs">
       <SubType>Component</SubType>

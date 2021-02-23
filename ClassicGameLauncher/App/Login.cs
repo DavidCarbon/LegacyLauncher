@@ -2,9 +2,7 @@
 using ClassicGameLauncher.App.Classes.Hashes;
 using GameLauncher.App.Classes;
 using GameLauncher.App.Classes.Auth;
-using GameLauncher.App.Classes.HashPassword;
 using GameLauncher.App.Classes.ModNetReloaded;
-using GameLauncher.HashPassword;
 using GameLauncherReborn;
 using SimpleJSON;
 using System;
@@ -16,7 +14,6 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using System.Xml;
 
 namespace ClassicGameLauncher
 {
@@ -32,9 +29,6 @@ namespace ClassicGameLauncher
         int CurrentModFileCount = 0;
         int TotalModFileCount = 0;
         /* END ModNet Global Functions */
-
-        int CountFiles = 0;
-        int CountFilesTotal = 0;
 
         SimpleJSON.JSONNode result;
 
@@ -236,19 +230,16 @@ namespace ClassicGameLauncher
         }
 
         public void DoModNetJob() {
-            File.Delete("ModManager.dat");
-
-            if (!Directory.Exists("modules")) Directory.CreateDirectory("modules");
+            if (!Directory.Exists("modules")) Directory.Delete("modules", true);
             if (!Directory.Exists("scripts")) Directory.CreateDirectory("scripts");
-            String[] GlobalFiles = new string[] { "dinput8.dll", "global.ini" };
-            String[] ModNetReloadedFiles = new string[] { "7z.dll", "PocoFoundation.dll", "PocoNet.dll", "ModLoader.asi" };
-            String[] ModNetLegacyFiles = new string[] { "modules/udpcrc.soapbox.module", "modules/udpcrypt1.soapbox.module", "modules/udpcrypt2.soapbox.module", "modules/xmppsubject.soapbox.module",
-                    "scripts/global.ini", "lightfx.dll", "ModManager.asi", "global.ini" };
 
-            String[] RemoveAllFiles = GlobalFiles.Concat(ModNetReloadedFiles).Concat(ModNetLegacyFiles).ToArray();
+            String[] RemoveAllFiles = new string[] { "modules/udpcrc.soapbox.module", "modules/udpcrypt1.soapbox.module", "modules/udpcrypt2.soapbox.module", 
+                "modules/xmppsubject.soapbox.module", "scripts/global.ini", "lightfx.dll", "PocoFoundation.dll", "PocoNet.dll", "ModManager.dat"};
 
-            foreach (string file in RemoveAllFiles) {
-                if (File.Exists(file)) {
+            foreach (string file in RemoveAllFiles) 
+            {
+                if (File.Exists(file)) 
+                {
                     try {
                         File.Delete(file);
                     } catch {
@@ -256,14 +247,12 @@ namespace ClassicGameLauncher
                     }
                 }
             }
-
-            actionText.Text = "Detecting ModNetSupport for " + serverText.SelectedItem.ToString();
+            
             String jsonModNet = ModNetReloaded.ModNetSupported(serverText.SelectedValue.ToString());
 
             if (jsonModNet != String.Empty) {
-                actionText.Text = "Detecting ModNet Support, Checking Required Files!";
+                actionText.Text = "Detecting ModNetSupport for " + serverText.SelectedItem.ToString();
 
-                string[] newFiles = GlobalFiles.Concat(ModNetReloadedFiles).ToArray();
                 try {
                     try { if (File.Exists("lightfx.dll")) File.Delete("lightfx.dll"); } catch { }
 
@@ -308,35 +297,33 @@ namespace ClassicGameLauncher
 
                     SimpleJSON.JSONNode IndexJson = SimpleJSON.JSON.Parse(jsonindex);
 
-                    CountFilesTotal = IndexJson["entries"].Count;
 
                     String path = Path.Combine("MODS", MDFive.HashPassword(MainJson["serverID"]).ToLower());
                     if (!Directory.Exists(path)) Directory.CreateDirectory(path);
 
-                    foreach (JSONNode modfile in IndexJson["entries"]) {
-                        if (SHA.HashFile(path + "/" + modfile["Name"]).ToLower() != modfile["Checksum"]) {
-                            WebClient client2 = new WebClient();
-                            client2.DownloadFileAsync(new Uri(MainJson["basePath"] + "/" + modfile["Name"]), path + "/" + modfile["Name"]);
+                    /* new */
+                    foreach (JSONNode modfile in IndexJson["entries"])
+                    {
+                        if (SHA.HashFile(path + "/" + modfile["Name"]).ToLower() != modfile["Checksum"])
+                        {
+                            modFilesDownloadUrls.Enqueue(new Uri(MainJson["basePath"] + "/" + modfile["Name"]));
+                            TotalModFileCount++;
 
-                            client2.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
-                            client2.DownloadFileCompleted += (test, stuff) => {
-                                if (SHA.HashFile(path + "/" + modfile["Name"]).ToLower() == modfile["Checksum"]) {
-                                    CountFiles++;
-
-                                    if (CountFiles == CountFilesTotal) {
-                                        launchGame();
-                                    }
-                                } else {
-                                    File.Delete(path + "/" + modfile["Name"]);
-                                    Console.WriteLine(modfile["Name"] + " must be removed.");
-                                    DoModNetJob();
-                                }
-                            };
-                        } else {
-                            launchGame();
+                            if (File.Exists(path + "/" + modfile["Name"]))
+                            {
+                                File.Delete(path + "/" + modfile["Name"]);
+                            }
                         }
                     }
 
+                    if (modFilesDownloadUrls.Count != 0)
+                    {
+                        this.DownloadModNetFilesRightNow(path);
+                    }
+                    else
+                    {
+                        launchGame();
+                    }
                 } catch (Exception ex) {
                     MessageBox.Show(ex.Message);
                 }

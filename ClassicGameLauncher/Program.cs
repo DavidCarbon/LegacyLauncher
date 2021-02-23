@@ -1,12 +1,12 @@
-﻿using GameLauncher.HashPassword;
+﻿using ClassicGameLauncher.App.Classes.Hashes;
+using ClassicGameLauncher.App.Classes.ModNet;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 
-namespace ClassicGameLauncher {
+namespace ClassicGameLauncher
+{
     static class Program {
         /// <summary>
         /// Główny punkt wejścia dla aplikacji.
@@ -30,9 +30,22 @@ namespace ClassicGameLauncher {
                 return;
             }
 
-            if (SHA.HashFile("nfsw.exe") != "7C0D6EE08EB1EDA67D5E5087DDA3762182CDE4AC") { 
+            if (
+                SHA.HashFile("nfsw.exe") != "7C0D6EE08EB1EDA67D5E5087DDA3762182CDE4AC" ||
+                SHA.HashFile("nfsw.exe") != "DB9287FB7B0CDA237A5C3885DD47A9FFDAEE1C19" ||
+                SHA.HashFile("nfsw.exe") != "E69890D31919DE1649D319956560269DB88B8F22"
+                )
+            { 
                 MessageBox.Show("Invalid file was detected, please restore original nfsw.exe", "LegacyLauncher", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            } else {
+            } 
+            else 
+            {
+                if (File.Exists(".links"))
+                {
+                    var linksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory + "\\.links");
+                    ModNetLinksCleanup.CleanLinks(linksPath);
+                }
+
                 Application.Run(new Form1());
             }
         }
