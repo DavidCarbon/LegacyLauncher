@@ -1,4 +1,6 @@
-﻿using GameLauncher.App.Classes;
+﻿using ClassicGameLauncher.App.Classes.Global;
+using ClassicGameLauncher.App.Classes.Hashes;
+using GameLauncher.App.Classes;
 using GameLauncher.App.Classes.Auth;
 using GameLauncher.App.Classes.HashPassword;
 using GameLauncher.App.Classes.ModNetReloaded;
@@ -7,10 +9,7 @@ using GameLauncherReborn;
 using SimpleJSON;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -19,10 +18,20 @@ using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Xml;
 
-namespace ClassicGameLauncher {
+namespace ClassicGameLauncher
+{
     public partial class Form1 : Form {
         private bool _modernAuthSupport = false;
         private bool _ticketRequired;
+
+        /* START ModNet Global Functions */
+        public static String ModNetFileNameInUse = String.Empty;
+        readonly Queue<Uri> modFilesDownloadUrls = new Queue<Uri>();
+        bool isDownloadingModNetFiles = false;
+
+        int CurrentModFileCount = 0;
+        int TotalModFileCount = 0;
+        /* END ModNet Global Functions */
 
         int CountFiles = 0;
         int CountFilesTotal = 0;
@@ -252,28 +261,50 @@ namespace ClassicGameLauncher {
             String jsonModNet = ModNetReloaded.ModNetSupported(serverText.SelectedValue.ToString());
 
             if (jsonModNet != String.Empty) {
-                actionText.Text = "ModNetReloaded support detected, downloading required files...";
+                actionText.Text = "Detecting ModNet Support, Checking Required Files!";
 
                 string[] newFiles = GlobalFiles.Concat(ModNetReloadedFiles).ToArray();
                 try {
                     try { if (File.Exists("lightfx.dll")) File.Delete("lightfx.dll"); } catch { }
 
-                    WebClientWithTimeout newModNetFilesDownload = new WebClientWithTimeout();
-                    foreach (string file in newFiles) {
-                        actionText.Text = "Fetching ModNetReloaded Files: " + file;
-                        Application.DoEvents();
-                        newModNetFilesDownload.DownloadFile("https://cdn.soapboxrace.world/modules/" + file, file);
-                    }
+                    /* Get Remote ModNet list to process for checking required ModNet files are present and current */
+                    String modules = new WebClient().DownloadString(URLs.modnetserver + "/launcher-modules/modules.json");
+                    string[] modules_newlines = modules.Split(new string[] { "\n" }, StringSplitOptions.None);
 
-                    try {
-                        newModNetFilesDownload.DownloadFile("https://launcher.worldunited.gg/legacy/global.ini", "global.ini");
+                    foreach (String modules_newline in modules_newlines)
+                    {
+                        if (modules_newline.Trim() == "{" || modules_newline.Trim() == "}") continue;
+
+                        String trim_modules_newline = modules_newline.Trim();
+                        String[] modules_files = trim_modules_newline.Split(new char[] { ':' });
+
+                        String ModNetList = modules_files[0].Replace("\"", "").Trim();
+                        String ModNetSHA = modules_files[1].Replace("\"", "").Replace(",", "").Trim();
+
+                        if (SHATwoFiveSix.HashFile(AppDomain.CurrentDomain.BaseDirectory + "\\" + ModNetList).ToLower() != ModNetSHA || !File.Exists(AppDomain.CurrentDomain.BaseDirectory + "\\" + ModNetList))
+                        {
+                            actionText.Text = ("ModNet: Downloading " + ModNetList).ToUpper();
+
+                            if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "\\" + ModNetList))
+                            {
+                                File.Delete(AppDomain.CurrentDomain.BaseDirectory + "\\" + ModNetList);
+                            }
+
+                            WebClient newModNetFilesDownload = new WebClient();
+                            newModNetFilesDownload.DownloadFile(URLs.modnetserver + "/launcher-modules/" + ModNetList, AppDomain.CurrentDomain.BaseDirectory + "/" + ModNetList);
+                        }
+                        else
+                        {
+                            actionText.Text = ("ModNet: Up to Date " + ModNetList).ToUpper();
+                        }
+
+                        Application.DoEvents();
                     }
-                    catch { }
 
                     SimpleJSON.JSONNode MainJson = SimpleJSON.JSON.Parse(jsonModNet);
 
                     Uri newIndexFile = new Uri(MainJson["basePath"] + "/index.json");
-                    String jsonindex = new WebClientWithTimeout().DownloadString(newIndexFile);
+                    String jsonindex = new WebClient().DownloadString(newIndexFile);
 
                     SimpleJSON.JSONNode IndexJson = SimpleJSON.JSON.Parse(jsonindex);
 
@@ -284,7 +315,7 @@ namespace ClassicGameLauncher {
 
                     foreach (JSONNode modfile in IndexJson["entries"]) {
                         if (SHA.HashFile(path + "/" + modfile["Name"]).ToLower() != modfile["Checksum"]) {
-                            WebClientWithTimeout client2 = new WebClientWithTimeout();
+                            WebClient client2 = new WebClient();
                             client2.DownloadFileAsync(new Uri(MainJson["basePath"] + "/" + modfile["Name"]), path + "/" + modfile["Name"]);
 
                             client2.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
@@ -302,190 +333,101 @@ namespace ClassicGameLauncher {
                                 }
                             };
                         } else {
-                            CountFiles++;
-
-                            if (CountFiles == CountFilesTotal) {
-                                launchGame();
-                            }
+                            launchGame();
                         }
                     }
 
                 } catch (Exception ex) {
                     MessageBox.Show(ex.Message);
                 }
-            } else {
-                string[] newFiles = GlobalFiles.Concat(ModNetLegacyFiles).ToArray();
-
-                WebClientWithTimeout newModNetFilesDownload = new WebClientWithTimeout();
-                foreach (string file in newFiles) {
-                    actionText.Text = "Fetching LegacyModnet Files: " + file;
-                    Application.DoEvents();
-                    newModNetFilesDownload.DownloadFile("http://launcher.worldunited.gg/legacy/" + file, file);
-                }
-
-                if (result["modsUrl"] != null) {
-                    actionText.Text = "Electron support detected, checking mods...";
-
-                    Uri newIndexFile = new Uri(result["modsUrl"] + "/index.json");
-                    String jsonindex = new WebClientWithTimeout().DownloadString(newIndexFile);
-                    SimpleJSON.JSONNode IndexJson = SimpleJSON.JSON.Parse(jsonindex);
-
-                    CountFilesTotal = IndexJson.Count;
-
-                    String electronpath = (new Uri(serverText.SelectedValue.ToString()).Host).Replace(".", "-");
-                    String path = Path.Combine("MODS", electronpath);
-                    if (!Directory.Exists(path)) Directory.CreateDirectory(path);
-
-                    File.WriteAllText(path + ".json", jsonindex);
-
-                    using (var fs = new FileStream("ModManager.dat", FileMode.Create))
-                    using (var bw = new BinaryWriter(fs)) {
-                        bw.Write(CountFilesTotal);
-
-                        foreach (JSONNode file in IndexJson) {
-                            var originalPath = Path.Combine(file["file"]).Replace("/", "\\").ToUpper();
-                            var modPath = Path.Combine(path, file["file"]).Replace("/", "\\").ToUpper();
-
-                            bw.Write(originalPath.Length);
-                            bw.Write(originalPath.ToCharArray());
-                            bw.Write(modPath.Length);
-                            bw.Write(modPath.ToCharArray());
-                        }
-                    }
-
-                    foreach (JSONNode modfile in IndexJson) {
-                        String directorycreate = Path.GetDirectoryName(path + "/" + modfile["file"]);
-                        Directory.CreateDirectory(directorycreate);
-
-                        if (ElectronModNet.calculateHash(path + "/" + modfile["file"]) != modfile["hash"]) {
-                            WebClientWithTimeout client2 = new WebClientWithTimeout();
-                            client2.DownloadFileAsync(new Uri(result["modsUrl"] + "/" + modfile["file"]), path + "/" + modfile["file"]);
-
-                            client2.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
-                            client2.DownloadFileCompleted += (test, stuff) => {
-                                if (ElectronModNet.calculateHash(path + "/" + modfile["file"]) == modfile["hash"]) {
-                                    CountFiles++;
-
-                                    if (CountFiles == CountFilesTotal) {
-                                        launchGame();
-                                    }
-                                } else {
-                                    File.Delete(path + "/" + modfile["file"]);
-                                    Console.WriteLine(modfile["file"] + " must be removed.");
-                                    DoModNetJob();
-                                }
-                            };
-                        } else {
-                            CountFiles++;
-
-                            if (CountFiles == CountFilesTotal) {
-                                launchGame();
-                            }
-                        }
-                    }
-
-                } else if ((bool)result["rwacallow"] == true) {
-                    actionText.Text = "RWAC support detected, checking mods...";
-
-                    String rwacpath = MDFive.HashPassword(new Uri(serverText.SelectedValue.ToString()).Host);
-                    String path = Path.Combine("MODS", rwacpath);
-                    Uri rwac_wev2 = new Uri(result["homePageUrl"] + "/rwac/fileschecker_sbrw.xml");
-                    String getcontent = new WebClient().DownloadString(rwac_wev2);
-
-                    XmlDocument xmlDoc = new XmlDocument();
-                    xmlDoc.LoadXml(getcontent);
-                    var nodes = xmlDoc.SelectNodes("rwac/files/file");
-
-                    CountFilesTotal = nodes.Count;
-
-                    //ModManager.dat
-                    using (var fs = new FileStream("ModManager.dat", FileMode.Create))
-                    using (var bw = new BinaryWriter(fs)) {
-                        bw.Write(nodes.Count);
-
-                        foreach (XmlNode files in nodes) {
-                            string realfilepath = Path.Combine(files.Attributes["path"].Value, files.Attributes["name"].Value);
-                            String directorycreate = Path.GetDirectoryName(path + "/" + realfilepath);
-
-                            var originalPath = Path.Combine(realfilepath).Replace("/", "\\").ToUpper();
-                            var modPath = Path.Combine(path, realfilepath).Replace("/", "\\").ToUpper();
-
-                            bw.Write(originalPath.Length);
-                            bw.Write(originalPath.ToCharArray());
-                            bw.Write(modPath.Length);
-                            bw.Write(modPath.ToCharArray());
-
-                            Directory.CreateDirectory(directorycreate);
-                            if (files.Attributes["download"].Value != String.Empty)
-                            {
-                                if (MDFive.HashFile(path + "/" + realfilepath).ToLower() != files.InnerText)
-                                {
-                                    WebClientWithTimeout client2 = new WebClientWithTimeout();
-                                    client2.DownloadFileAsync(new Uri(files.Attributes["download"].Value), path + "/" + realfilepath);
-
-                                    client2.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
-                                    client2.DownloadFileCompleted += (test, stuff) => {
-                                        if (MDFive.HashFile(path + "/" + realfilepath).ToLower() == files.InnerText) {
-                                            CountFiles++;
-
-                                            if (CountFiles == CountFilesTotal) {
-                                                launchGame();
-                                            }
-                                        } else {
-                                            File.Delete(path + "/" + realfilepath);
-                                            Console.WriteLine(realfilepath + " must be removed.");
-                                            DoModNetJob();
-                                        }
-                                    };
-                                } else {
-                                    CountFiles++;
-
-                                    if (CountFiles == CountFilesTotal) {
-                                        launchGame();
-                                    }
-                                }
-                            } else {
-                                CountFiles++;
-
-                                if (CountFiles == CountFilesTotal) {
-                                    launchGame();
-                                }
-                            }
-                        }
-                    }
-                } else  {
-                    actionText.Text = "Deprecated modnet detected. Aborting...";
-                    launchGame();
-                }
+            } 
+            else 
+            {
+                //Yikes from me Coders - DavidCarbon
+                launchGame();
             }
         }
 
-        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
-            string send = Prompt.ShowDialog("Please specify your email address.", "LegacyLauncher");
+        public void DownloadModNetFilesRightNow(string path)
+        {
+            while (isDownloadingModNetFiles == false)
+            {
+                CurrentModFileCount++;
+                var url = modFilesDownloadUrls.Dequeue();
+                string FileName = url.ToString().Substring(url.ToString().LastIndexOf("/") + 1, (url.ToString().Length - url.ToString().LastIndexOf("/") - 1));
 
-            if (send != String.Empty) {
-                String responseString;
-                try {
-                    Uri resetPasswordUrl = new Uri(serverText.SelectedValue.ToString() + "/RecoveryPassword/forgotPassword");
+                ModNetFileNameInUse = FileName;
 
-                    var request = (HttpWebRequest)System.Net.WebRequest.Create(resetPasswordUrl);
-                    var postData = "email=" + send;
-                    var data = Encoding.ASCII.GetBytes(postData);
-                    request.Method = "POST";
-                    request.ContentType = "application/x-www-form-urlencoded";
-                    request.ContentLength = data.Length;
+                try
+                {
+                    WebClient client2 = new WebClient();
 
-                    using (var stream = request.GetRequestStream()) {
-                        stream.Write(data, 0, data.Length);
-                    }
-
-                    var response = (HttpWebResponse)request.GetResponse();
-                    responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                } catch {
-                    responseString = "Failed to send email!";
+                    client2.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
+                    client2.DownloadFileCompleted += (test, stuff) =>
+                    {
+                        isDownloadingModNetFiles = false;
+                        if (modFilesDownloadUrls.Any() == false)
+                        {
+                            launchGame();
+                        }
+                        else
+                        {
+                            //Redownload other file
+                            DownloadModNetFilesRightNow(path);
+                        }
+                    };
+                    client2.DownloadFileAsync(url, path + "/" + FileName);
+                }
+                catch (Exception error)
+                {
+                    actionText.Text = error.Message;
                 }
 
-                MessageBox.Show(null, responseString, "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                isDownloadingModNetFiles = true;
+            }
+        }
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) 
+        {
+            if (!string.IsNullOrEmpty(result["WebRecoveryUrl"]))
+            {
+                Process.Start(result["WebRecoveryUrl"]);
+                MessageBox.Show(null, "A browser window has been opened to complete password recovery on " + result["ServerName"], "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            else
+            {
+                string send = Prompt.ShowDialog("Please specify your email address.", "LegacyLauncher");
+
+                if (send != String.Empty)
+                {
+                    String responseString;
+                    try
+                    {
+                        Uri resetPasswordUrl = new Uri(serverText.SelectedValue.ToString() + "/RecoveryPassword/forgotPassword");
+
+                        var request = (HttpWebRequest)System.Net.WebRequest.Create(resetPasswordUrl);
+                        var postData = "email=" + send;
+                        var data = Encoding.ASCII.GetBytes(postData);
+                        request.Method = "POST";
+                        request.ContentType = "application/x-www-form-urlencoded";
+                        request.ContentLength = data.Length;
+
+                        using (var stream = request.GetRequestStream())
+                        {
+                            stream.Write(data, 0, data.Length);
+                        }
+
+                        var response = (HttpWebResponse)request.GetResponse();
+                        responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                    }
+                    catch
+                    {
+                        responseString = "Failed to send email!";
+                    }
+
+                    MessageBox.Show(null, responseString, "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
     }

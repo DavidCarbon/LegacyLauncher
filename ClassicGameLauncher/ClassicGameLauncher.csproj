@@ -52,6 +52,9 @@
     <Compile Include="App\Classes\AuthZone\ClassicAuth.cs" />
     <Compile Include="App\Classes\AuthZone\ModernAuth.cs" />
     <Compile Include="App\Classes\AuthZone\Tokens.cs" />
+    <Compile Include="App\Classes\Global\URLs.cs" />
+    <Compile Include="App\Classes\Hashes\SHA256.cs" />
+    <Compile Include="App\Classes\ModNet\ModNetLinksCleanup.cs" />
     <Compile Include="App\Login.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -97,5 +100,6 @@
   <ItemGroup>
     <Content Include="nfsw.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
