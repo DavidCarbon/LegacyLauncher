@@ -19,7 +19,8 @@ using ClassicGameLauncher.App.Classes.LauncherCore.Lists;
 
 namespace ClassicGameLauncher
 {
-    public partial class Form1 : Form {
+    public partial class Form1 : Form 
+    {
         /* START Login Checks */
         private bool _modernAuthSupport = false;
         private bool _ticketRequired;
@@ -34,134 +35,196 @@ namespace ClassicGameLauncher
         /* END ModNet Global Functions */
 
         /* START SpeedBug Timer */
-        private bool _gameKilledBySpeedBugCheck = false;
+        public static bool _gameKilledBySpeedBugCheck = false;
         private int _nfswPid;
+
+        public static bool CheatsWasUsed = false;
         /* END SpeedBug Timer */
 
         /* START GetServerInformation Cache */
         JSONNode result;
         /* END GetServerInformation Cache  */
 
-        public Form1() {
+        /* START Selected Server Cache */
+        public static string SelectedServerName = "Unknown";
+        public static string SelectedServerIP = "localhost";
+        public static string SelectedServerIPRaw = "http://localhost";
+        /* END Selected Server Cache */
+
+        public Form1() 
+        {
             InitializeComponent();
 
             Load += new EventHandler(Form1_Load);
-            serverText.SelectedIndexChanged += new EventHandler(serverPick_SelectedIndexChanged);
+            ServerDropDownList.SelectedIndexChanged += new EventHandler(serverPick_SelectedIndexChanged);
 
             actionText.Text = "Ready!";
         }
 
         private void Form1_Load(object sender, EventArgs e) 
         {
-            serverText.DisplayMember = "Text";
-            serverText.ValueMember = "Value";
+            ServerDropDownList.DisplayMember = "Text";
+            ServerDropDownList.ValueMember = "Value";
 
-            serverText.DataSource = ServerListUpdater.ServerList;
-            serverText.SelectedIndex = 0;
+            ServerDropDownList.DataSource = ServerListUpdater.ServerList;
+            ServerDropDownList.SelectedIndex = 0;
         }
 
-        private void serverPick_SelectedIndexChanged(object sender, EventArgs e) {
+        private void serverPick_SelectedIndexChanged(object sender, EventArgs e) 
+        {
             Tokens.Clear();
             actionText.Text = "Loading info...";
 
-            try {
-                button1.Enabled = true;
-                button2.Enabled = true;
+            try 
+            {
+                ButtonLogin.Enabled = true;
+                ButtonRegister.Enabled = true;
+
+                SelectedServerName = ServerDropDownList.Text.ToString().ToUpper();
+                SelectedServerIP = new Uri(ServerDropDownList.SelectedValue.ToString()).Host;
+                SelectedServerIPRaw = ServerDropDownList.SelectedValue.ToString();
 
                 WebClientWithTimeout serverval = new WebClientWithTimeout();
-                var stringToUri = new Uri(serverText.SelectedValue.ToString() + "/GetServerInformation");
+                var stringToUri = new Uri(ServerDropDownList.SelectedValue.ToString() + "/GetServerInformation");
                 String serverdata = serverval.DownloadString(stringToUri);
 
                 result = JSON.Parse(serverdata);
 
                 actionText.Text = "Players on server: " + result["onlineNumber"];
 
-                try {
-                    if (string.IsNullOrEmpty(result["modernAuthSupport"])) {
+                try 
+                {
+                    if (string.IsNullOrEmpty(result["modernAuthSupport"])) 
+                    {
                         _modernAuthSupport = false;
-                    } else if (result["modernAuthSupport"]) {
-                        if (stringToUri.Scheme == "https") {
+                    } 
+                    else if (result["modernAuthSupport"]) 
+                    {
+                        if (stringToUri.Scheme == "https") 
+                        {
                             _modernAuthSupport = true;
-                        } else {
+                        } 
+                        else 
+                        {
                             _modernAuthSupport = false;
                         }
-                    } else {
+                    } 
+                    else 
+                    {
                         _modernAuthSupport = false;
                     }
-                } catch {
+                } 
+                catch 
+                {
                     _modernAuthSupport = false;
                 }
 
-                try {
+                try 
+                {
                     _ticketRequired = (bool)result["requireTicket"];
-                } catch {
+                } 
+                catch 
+                {
                     _ticketRequired = true; //lets assume yes, we gonna check later if ticket is empty or not.
                 }
-            } catch {
-                button1.Enabled = false;
-                button2.Enabled = false;
+            } 
+            catch 
+            {
+                ButtonLogin.Enabled = false;
+                ButtonRegister.Enabled = false;
+
+                SelectedServerName = "Offline";
+                SelectedServerIP = "http://localhost";
+
                 actionText.Text = "Server is offline.";
             }
-
 
             ticketBox.Enabled = _ticketRequired;
         }
 
-        private void button1_Click(object sender, EventArgs e) {
+        private void button1_Click(object sender, EventArgs e) 
+        {
             Tokens.Clear();
-            if (!validateEmail(loginEmailBox.Text)) {
+            if (!validateEmail(loginEmailBox.Text)) 
+            {
                 actionText.Text = "Please type your email!";
-            } else if (String.IsNullOrEmpty(loginPasswordBox.Text)) {
+            } 
+            else if (String.IsNullOrEmpty(loginPasswordBox.Text)) 
+            {
                 actionText.Text = "Please type your password!";
-            } else {
-                Tokens.IPAddress = serverText.SelectedValue.ToString();
-                Tokens.ServerName = serverText.SelectedItem.ToString();
+            } 
+            else 
+            {
+                Tokens.IPAddress = ServerDropDownList.SelectedValue.ToString();
+                Tokens.ServerName = ServerDropDownList.SelectedItem.ToString();
 
-                if (_modernAuthSupport == false) {
+                if (_modernAuthSupport == false) 
+                {
                     ClassicAuth.Login(loginEmailBox.Text, SHA.HashPassword(loginPasswordBox.Text).ToLower());
-                } else {
+                } else 
+                {
                     ModernAuth.Login(loginEmailBox.Text, loginPasswordBox.Text);
                 }
 
-                if (String.IsNullOrEmpty(Tokens.Error)) {
-                    if (!String.IsNullOrEmpty(Tokens.Warning)) {
+                if (String.IsNullOrEmpty(Tokens.Error)) 
+                {
+                    if (!String.IsNullOrEmpty(Tokens.Warning)) 
+                    {
                         MessageBox.Show(null, Tokens.Warning, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
 
                     //TODO: MODS GOES HERE
                     DoModNetJob();
                     //
-                } else {
+                } 
+                else 
+                {
                     MessageBox.Show(null, Tokens.Error, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     actionText.Text = (String.IsNullOrEmpty(Tokens.Error)) ? "An error occurred." : Tokens.Error;
                 }
             }
         }
 
-        private void button2_Click(object sender, EventArgs e) {
-            if (!validateEmail(registerEmail.Text)) {
+        private void button2_Click(object sender, EventArgs e) 
+        {
+            if (!validateEmail(registerEmail.Text)) 
+            {
                 actionText.Text = "Please type your email!";
-            } else if (String.IsNullOrEmpty(registerPassword.Text)) {
+            } 
+            else if (String.IsNullOrEmpty(registerPassword.Text)) 
+            {
                 actionText.Text = "Please type your password!";
-            } else if (String.IsNullOrEmpty(registerPassword2.Text)) {
+            } 
+            else if (String.IsNullOrEmpty(registerPassword2.Text)) 
+            {
                 actionText.Text = "Please type your confirmation password!";
-            } else if (registerPassword.Text != registerPassword2.Text) {
+            } 
+            else if (registerPassword.Text != registerPassword2.Text) 
+            {
                 actionText.Text = "Password doesn't match!";
-            } else if(_ticketRequired) {
-                if(String.IsNullOrEmpty(ticketBox.Text)) {
+            } 
+            else if(_ticketRequired) 
+            {
+                if(String.IsNullOrEmpty(ticketBox.Text)) 
+                {
                     actionText.Text = "Ticket is required to play on this server!";
-                } else {
+                } 
+                else 
+                {
                     createAccount();
                 }
-            } else {
+            } 
+            else 
+            {
                 createAccount();
             }
         }
 
-        private void createAccount() {
+        private void createAccount() 
+        {
             String token = (_ticketRequired) ? ticketBox.Text : null;
-            Tokens.IPAddress = serverText.SelectedValue.ToString();
-            Tokens.ServerName = serverText.SelectedItem.ToString();
+            Tokens.IPAddress = ServerDropDownList.SelectedValue.ToString();
+            Tokens.ServerName = ServerDropDownList.SelectedItem.ToString();
 
             if (_modernAuthSupport == false) {
                 ClassicAuth.Register(registerEmail.Text, SHA.HashPassword(registerPassword.Text), token);
@@ -180,7 +243,8 @@ namespace ClassicGameLauncher
             }
         }
 
-        public static bool validateEmail(string email) {
+        public static bool validateEmail(string email) 
+        {
             if (String.IsNullOrEmpty(email)) return false;
 
             String theEmailPattern = @"^[\w!#$%&'*+\-/=?\^_`{|}~]+(\.[\w!#$%&'*+\-/=?\^_`{|}~]+)*"
@@ -216,6 +280,11 @@ namespace ClassicGameLauncher
 
             AntiCheat.process_id = nfswProcess.Id;
 
+            if (nfswProcess != null)
+            {
+                AntiCheat.MemoryChecks();
+            }
+
             //TIMER HERE
             int secondsToShutDown = (result["secondsToShutDown"].AsInt != 0) ? result["secondsToShutDown"].AsInt : 2 * 60 * 60;
             System.Timers.Timer shutdowntimer = new System.Timers.Timer();
@@ -224,6 +293,14 @@ namespace ClassicGameLauncher
                 Process[] allOfThem = Process.GetProcessesByName("nfsw");
 
                 if (secondsToShutDown <= 0)
+                {
+                    foreach (var oneProcess in allOfThem)
+                    {
+                        Process.GetProcessById(oneProcess.Id).Kill();
+                    }
+                }
+
+                if (CheatsWasUsed == true)
                 {
                     foreach (var oneProcess in allOfThem)
                     {
@@ -244,7 +321,7 @@ namespace ClassicGameLauncher
                         secondsToShutDownNamed = "Waiting for event to finish.";
                     }
 
-                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + serverText.SelectedItem.ToString() + " | Launcher Build: " + ProductVersion + " | Force Restart In: " + secondsToShutDownNamed);
+                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + SelectedServerName + " | Launcher Build: " + ProductVersion + " | Force Restart In: " + secondsToShutDownNamed + " | Debug: IP - " + SelectedServerIP + " NAME - " + ServerDropDownList.SelectedItem.ToString());
                 }
 
                 --secondsToShutDown;
@@ -267,10 +344,22 @@ namespace ClassicGameLauncher
 
                     if (exitCode == 0)
                     {
+                        if (File.Exists(".links"))
+                        {
+                            var linksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory + "\\.links");
+                            ModNetLinksCleanup.CleanLinks(linksPath);
+                        }
+
                         Application.Exit();
                     }
                     else
                     {
+                        if (File.Exists(".links"))
+                        {
+                            var linksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory + "\\.links");
+                            ModNetLinksCleanup.CleanLinks(linksPath);
+                        }
+
                         String errorMsg = "Game Crash with exitcode: " + exitCode.ToString() + " (0x" + exitCode.ToString("X") + ")";
                         if (exitCode == -1073741819) errorMsg = "Game Crash: Access Violation (0x" + exitCode.ToString("X") + ")";
                         if (exitCode == -1073740940) errorMsg = "Game Crash: Heap Corruption (0x" + exitCode.ToString("X") + ")";
@@ -314,7 +403,8 @@ namespace ClassicGameLauncher
             }
         }
 
-        private string FormatFileSize(long byteCount) {
+        private string FormatFileSize(long byteCount) 
+        {
             var numArray = new double[] { 1000000000, 1000000, 1000, 0 };
             var strArrays = new[] { "GB", "MB", "KB", "Bytes" };
             for (var i = 0; i < numArray.Length; i++) {
@@ -326,7 +416,8 @@ namespace ClassicGameLauncher
             return "0 Bytes";
         }
 
-        void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
+        void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) 
+        {
             this.BeginInvoke((MethodInvoker)delegate {
                 double bytesIn = double.Parse(e.BytesReceived.ToString());
                 double totalBytes = double.Parse(e.TotalBytesToReceive.ToString());
@@ -335,7 +426,13 @@ namespace ClassicGameLauncher
             });
         }
 
-        public void DoModNetJob() {
+        public void DoModNetJob() 
+        {
+            /* Disable Any Buttons */
+            ServerDropDownList.Enabled = false;
+            ButtonLogin.Enabled = false;
+            ButtonRegister.Enabled = false;
+
             if (Directory.Exists("modules")) Directory.Delete("modules", true);
             if (!Directory.Exists("scripts")) Directory.CreateDirectory("scripts");
 
@@ -354,10 +451,10 @@ namespace ClassicGameLauncher
                 }
             }
             
-            String jsonModNet = ModNetReloaded.ModNetSupported(serverText.SelectedValue.ToString());
+            String jsonModNet = ModNetReloaded.ModNetSupported(ServerDropDownList.SelectedValue.ToString());
 
             if (jsonModNet != String.Empty) {
-                actionText.Text = "Detecting ModNetSupport for " + serverText.SelectedItem.ToString();
+                actionText.Text = "Detecting ModNetSupport for " + ServerDropDownList.SelectedItem.ToString();
 
                 try {
                     try { if (File.Exists("lightfx.dll")) File.Delete("lightfx.dll"); } catch { }
@@ -485,7 +582,7 @@ namespace ClassicGameLauncher
             if (!string.IsNullOrEmpty(result["WebRecoveryUrl"]))
             {
                 Process.Start(result["WebRecoveryUrl"]);
-                MessageBox.Show(null, "A browser window has been opened to complete password recovery on " + serverText.SelectedItem.ToString(), "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(null, "A browser window has been opened to complete password recovery on " + ServerDropDownList.SelectedItem.ToString(), "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             else
@@ -497,7 +594,7 @@ namespace ClassicGameLauncher
                     String responseString;
                     try
                     {
-                        Uri resetPasswordUrl = new Uri(serverText.SelectedValue.ToString() + "/RecoveryPassword/forgotPassword");
+                        Uri resetPasswordUrl = new Uri(ServerDropDownList.SelectedValue.ToString() + "/RecoveryPassword/forgotPassword");
 
                         var request = (HttpWebRequest)System.Net.WebRequest.Create(resetPasswordUrl);
                         var postData = "email=" + send;

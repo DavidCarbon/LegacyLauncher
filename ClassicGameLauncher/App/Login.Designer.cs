@@ -30,11 +30,11 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.serverLabel = new System.Windows.Forms.Label();
-            this.serverText = new System.Windows.Forms.ComboBox();
+            this.ServerDropDownList = new System.Windows.Forms.ComboBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
-            this.button1 = new System.Windows.Forms.Button();
+            this.ForgotPassLink = new System.Windows.Forms.LinkLabel();
+            this.ButtonLogin = new System.Windows.Forms.Button();
             this.loginPasswordBox = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.loginEmailBox = new System.Windows.Forms.TextBox();
@@ -44,7 +44,7 @@
             this.label6 = new System.Windows.Forms.Label();
             this.registerPassword2 = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
-            this.button2 = new System.Windows.Forms.Button();
+            this.ButtonRegister = new System.Windows.Forms.Button();
             this.registerPassword = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.registerEmail = new System.Windows.Forms.TextBox();
@@ -66,14 +66,14 @@
             this.serverLabel.TabIndex = 0;
             this.serverLabel.Text = "Select Server:";
             // 
-            // serverText
+            // ServerDropDownList
             // 
-            this.serverText.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.serverText.FormattingEnabled = true;
-            this.serverText.Location = new System.Drawing.Point(90, 6);
-            this.serverText.Name = "serverText";
-            this.serverText.Size = new System.Drawing.Size(195, 21);
-            this.serverText.TabIndex = 1;
+            this.ServerDropDownList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ServerDropDownList.FormattingEnabled = true;
+            this.ServerDropDownList.Location = new System.Drawing.Point(90, 6);
+            this.ServerDropDownList.Name = "ServerDropDownList";
+            this.ServerDropDownList.Size = new System.Drawing.Size(195, 21);
+            this.ServerDropDownList.TabIndex = 1;
             // 
             // tabControl1
             // 
@@ -87,8 +87,8 @@
             // 
             // tabPage1
             // 
-            this.tabPage1.Controls.Add(this.linkLabel1);
-            this.tabPage1.Controls.Add(this.button1);
+            this.tabPage1.Controls.Add(this.ForgotPassLink);
+            this.tabPage1.Controls.Add(this.ButtonLogin);
             this.tabPage1.Controls.Add(this.loginPasswordBox);
             this.tabPage1.Controls.Add(this.label2);
             this.tabPage1.Controls.Add(this.loginEmailBox);
@@ -101,26 +101,26 @@
             this.tabPage1.Text = "Login";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
-            // linkLabel1
+            // ForgotPassLink
             // 
-            this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(4, 65);
-            this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(107, 13);
-            this.linkLabel1.TabIndex = 7;
-            this.linkLabel1.TabStop = true;
-            this.linkLabel1.Text = "I forgot my password!";
-            this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
+            this.ForgotPassLink.AutoSize = true;
+            this.ForgotPassLink.Location = new System.Drawing.Point(4, 65);
+            this.ForgotPassLink.Name = "ForgotPassLink";
+            this.ForgotPassLink.Size = new System.Drawing.Size(107, 13);
+            this.ForgotPassLink.TabIndex = 7;
+            this.ForgotPassLink.TabStop = true;
+            this.ForgotPassLink.Text = "I forgot my password!";
+            this.ForgotPassLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
-            // button1
+            // ButtonLogin
             // 
-            this.button1.Location = new System.Drawing.Point(6, 126);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(253, 32);
-            this.button1.TabIndex = 6;
-            this.button1.Text = "Login";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.ButtonLogin.Location = new System.Drawing.Point(6, 126);
+            this.ButtonLogin.Name = "ButtonLogin";
+            this.ButtonLogin.Size = new System.Drawing.Size(253, 32);
+            this.ButtonLogin.TabIndex = 6;
+            this.ButtonLogin.Text = "Login";
+            this.ButtonLogin.UseVisualStyleBackColor = true;
+            this.ButtonLogin.Click += new System.EventHandler(this.button1_Click);
             // 
             // loginPasswordBox
             // 
@@ -161,7 +161,7 @@
             this.tabPage2.Controls.Add(this.label6);
             this.tabPage2.Controls.Add(this.registerPassword2);
             this.tabPage2.Controls.Add(this.label5);
-            this.tabPage2.Controls.Add(this.button2);
+            this.tabPage2.Controls.Add(this.ButtonRegister);
             this.tabPage2.Controls.Add(this.registerPassword);
             this.tabPage2.Controls.Add(this.label3);
             this.tabPage2.Controls.Add(this.registerEmail);
@@ -207,15 +207,15 @@
             this.label5.TabIndex = 12;
             this.label5.Text = "Password:";
             // 
-            // button2
+            // ButtonRegister
             // 
-            this.button2.Location = new System.Drawing.Point(6, 126);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(253, 32);
-            this.button2.TabIndex = 11;
-            this.button2.Text = "Register";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.ButtonRegister.Location = new System.Drawing.Point(6, 126);
+            this.ButtonRegister.Name = "ButtonRegister";
+            this.ButtonRegister.Size = new System.Drawing.Size(253, 32);
+            this.ButtonRegister.TabIndex = 11;
+            this.ButtonRegister.Text = "Register";
+            this.ButtonRegister.UseVisualStyleBackColor = true;
+            this.ButtonRegister.Click += new System.EventHandler(this.button2_Click);
             // 
             // registerPassword
             // 
@@ -273,7 +273,7 @@
             this.ClientSize = new System.Drawing.Size(299, 249);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.tabControl1);
-            this.Controls.Add(this.serverText);
+            this.Controls.Add(this.ServerDropDownList);
             this.Controls.Add(this.serverLabel);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -281,7 +281,7 @@
             this.Name = "Form1";
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "LegacyLauncher";
+            this.Text = "GameLauncherSimplified";
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
@@ -297,11 +297,11 @@
         #endregion
 
         private System.Windows.Forms.Label serverLabel;
-        private System.Windows.Forms.ComboBox serverText;
+        private System.Windows.Forms.ComboBox ServerDropDownList;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button ButtonLogin;
         private System.Windows.Forms.TextBox loginPasswordBox;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox loginEmailBox;
@@ -312,12 +312,12 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TextBox registerPassword2;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button ButtonRegister;
         private System.Windows.Forms.TextBox registerPassword;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox registerEmail;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.LinkLabel linkLabel1;
+        private System.Windows.Forms.LinkLabel ForgotPassLink;
     }
 }
 

@@ -1,4 +1,5 @@
-﻿using ClassicGameLauncher.App.Classes.LauncherCore.Client.Web;
+﻿using ClassicGameLauncher.App.Classes.LauncherCore.Client.Auth;
+using ClassicGameLauncher.App.Classes.LauncherCore.Client.Web;
 using ClassicGameLauncher.App.Classes.LauncherCore.Global;
 using ClassicGameLauncher.App.Classes.SystemPlatform.Components;
 using System;
@@ -8,17 +9,18 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ClassicGameLauncher.App.Classes.LauncherCore
 {
     class AntiCheat
     {
         public static int process_id = 0;
-        public static string serverip = String.Empty;
-        public static string user_id = String.Empty;
+        public static string serverip = Form1.SelectedServerIP;
+        public static string user_id = Tokens.UserId;
         public static string persona_name = String.Empty;
         public static string persona_id = String.Empty;
-        public static int event_id = 0;
+        public static int event_id = 2000164;
         public static int cheats_detected = 0;
         private static Thread thread = new Thread(() => { });
 
@@ -33,7 +35,7 @@ namespace ClassicGameLauncher.App.Classes.LauncherCore
         public static bool detect_PURSUITBOT = false;
         public static bool detect_PMASKER = false;
 
-        public static void EnableChecks()
+        public static void MemoryChecks()
         {
             Process process = Process.GetProcessById(process_id);
             IntPtr processHandle = Kernel32.OpenProcess(0x0010, false, process.Id);
@@ -85,67 +87,29 @@ namespace ClassicGameLauncher.App.Classes.LauncherCore
                             String MemoryUsername = Encoding.UTF8.GetString(buffer16, 0, buffer16.Length);
                         }
                     }
-                    Thread.Sleep(100);
+
+                    Task.Delay(1000);
+
+                    if (detect_MULTIHACK == true) AntiCheat.cheats_detected |= 1;
+                    if (detect_FAST_POWERUPS == true) AntiCheat.cheats_detected |= 2;
+                    if (detect_SPEEDHACK == true) AntiCheat.cheats_detected |= 4;
+                    if (detect_SMOOTH_WALLS == true) AntiCheat.cheats_detected |= 8;
+                    if (detect_TANK_MODE == true) AntiCheat.cheats_detected |= 16;
+                    if (detect_WALLHACK == true) AntiCheat.cheats_detected |= 32;
+                    if (detect_DRIFTMOD == true) AntiCheat.cheats_detected |= 64;
+                    if (detect_PURSUITBOT == true) AntiCheat.cheats_detected |= 128;
+                    if (detect_PMASKER == true) AntiCheat.cheats_detected |= 256;
+
+                    if (AntiCheat.cheats_detected >= 0)
+                    {
+                        Form1.CheatsWasUsed = true;
+                        Form1._gameKilledBySpeedBugCheck = true;
+                        thread.Abort();
+                    }
                 }
             })
             { IsBackground = true };
             thread.Start();
-        }
-
-        public static void DisableChecks()
-        {
-            if (detect_MULTIHACK == true) AntiCheat.cheats_detected |= 1;
-            if (detect_FAST_POWERUPS == true) AntiCheat.cheats_detected |= 2;
-            if (detect_SPEEDHACK == true) AntiCheat.cheats_detected |= 4;
-            if (detect_SMOOTH_WALLS == true) AntiCheat.cheats_detected |= 8;
-            if (detect_TANK_MODE == true) AntiCheat.cheats_detected |= 16;
-            if (detect_WALLHACK == true) AntiCheat.cheats_detected |= 32;
-            if (detect_DRIFTMOD == true) AntiCheat.cheats_detected |= 64;
-            if (detect_PURSUITBOT == true) AntiCheat.cheats_detected |= 128;
-            if (detect_PMASKER == true) AntiCheat.cheats_detected |= 256;
-
-            if (AntiCheat.cheats_detected != 0)
-            {
-                String responseString;
-                try
-                {
-                    foreach (string report_url in URLs.anticheatreporting)
-                    {
-                        if (report_url.EndsWith("?"))
-                        {
-                            WebClient update_data = new WebClient();
-                            update_data.CancelAsync();
-                            update_data.Headers.Add("user-agent", UserAgent.UserAgentNameWithBuild);
-                            update_data.DownloadStringAsync(new Uri(report_url + "serverip=" + AntiCheat.serverip + "&user_id=" + AntiCheat.user_id + "&persona_name=" + AntiCheat.persona_name + "&event_session=" + AntiCheat.event_id + "&cheat_type=" + AntiCheat.cheats_detected + "&hwid=" + HardwareID.FingerPrint.Value() + "&persona_id=" + AntiCheat.persona_id));
-                        }
-                        else
-                        {
-                            Uri sendReport = new Uri(report_url);
-
-                            var request = (HttpWebRequest)WebRequest.Create(sendReport);
-                            var postData = "serverip=" + AntiCheat.serverip + "&user_id=" + AntiCheat.user_id + "&persona_name=" + AntiCheat.persona_name + "&event_session=" + AntiCheat.event_id + "&cheat_type=" + AntiCheat.cheats_detected + "&hwid=" + HardwareID.FingerPrint.Value() + "&persona_id=" + AntiCheat.persona_id;
-
-                            var data = Encoding.ASCII.GetBytes(postData);
-                            request.Method = "POST";
-                            request.ContentType = "application/x-www-form-urlencoded";
-                            request.ContentLength = data.Length;
-
-                            using (var stream = request.GetRequestStream())
-                            {
-                                stream.Write(data, 0, data.Length);
-                            }
-
-                            var response = (HttpWebResponse)request.GetResponse();
-                            responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                        }
-                    }
-                }
-                catch { }
-            }
-
-            detect_MULTIHACK = detect_FAST_POWERUPS = detect_SPEEDHACK = detect_SMOOTH_WALLS = detect_TANK_MODE = detect_WALLHACK = detect_DRIFTMOD = detect_PURSUITBOT = detect_PMASKER = false;
-            AntiCheat.cheats_detected = 0;
-            thread.Abort();
         }
     }
 }
