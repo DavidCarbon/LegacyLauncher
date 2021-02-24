@@ -45,7 +45,12 @@ namespace ClassicGameLauncher.App.Classes.LauncherCore.Lists
                 }
                 catch (Exception)
                 {
-                    ServerListStatus = "Error";
+                    ServerList.Add(new
+                    {
+                        Text = "Server List Error",
+                        Value = "http://localhost"
+                    });
+                    ServerListStatus = "Failed";
                 }
             }
         }
