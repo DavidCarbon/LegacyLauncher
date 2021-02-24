@@ -40,7 +40,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace SimpleJSON
+namespace ClassicGameLauncher.App.Classes.LauncherCore.Lists.JSON
 {
     public enum JSONNodeType
     {
@@ -81,8 +81,10 @@ namespace SimpleJSON
                 m_Object = aDictEnum;
                 m_Array = default(List<JSONNode>.Enumerator);
             }
-            public KeyValuePair<string, JSONNode> Current {
-                get {
+            public KeyValuePair<string, JSONNode> Current
+            {
+                get
+                {
                     if (type == Type.Array)
                         return new KeyValuePair<string, JSONNode>(string.Empty, m_Array.Current);
                     else if (type == Type.Object)
@@ -212,14 +214,18 @@ namespace SimpleJSON
             return null;
         }
 
-        public virtual IEnumerable<JSONNode> Children {
-            get {
+        public virtual IEnumerable<JSONNode> Children
+        {
+            get
+            {
                 yield break;
             }
         }
 
-        public IEnumerable<JSONNode> DeepChildren {
-            get {
+        public IEnumerable<JSONNode> DeepChildren
+        {
+            get
+            {
                 foreach (var C in Children)
                     foreach (var D in C.DeepChildren)
                         yield return D;
@@ -261,60 +267,75 @@ namespace SimpleJSON
         #region typecasting properties
 
 
-        public virtual double AsDouble {
-            get {
+        public virtual double AsDouble
+        {
+            get
+            {
                 double v = 0.0;
                 if (double.TryParse(Value, NumberStyles.Float, CultureInfo.InvariantCulture, out v))
                     return v;
                 return 0.0;
             }
-            set {
+            set
+            {
                 Value = value.ToString(CultureInfo.InvariantCulture);
             }
         }
 
-        public virtual int AsInt {
+        public virtual int AsInt
+        {
             get { return (int)AsDouble; }
             set { AsDouble = value; }
         }
 
-        public virtual float AsFloat {
+        public virtual float AsFloat
+        {
             get { return (float)AsDouble; }
             set { AsDouble = value; }
         }
 
-        public virtual bool AsBool {
-            get {
+        public virtual bool AsBool
+        {
+            get
+            {
                 bool v = false;
                 if (bool.TryParse(Value, out v))
                     return v;
                 return !string.IsNullOrEmpty(Value);
             }
-            set {
+            set
+            {
                 Value = (value) ? "true" : "false";
             }
         }
 
-        public virtual long AsLong {
-            get {
+        public virtual long AsLong
+        {
+            get
+            {
                 long val = 0;
                 if (long.TryParse(Value, out val))
                     return val;
                 return 0L;
             }
-            set {
+            set
+            {
                 Value = value.ToString();
             }
         }
 
-        public virtual JSONArray AsArray {
-            get {
+        public virtual JSONArray AsArray
+        {
+            get
+            {
                 return this as JSONArray;
             }
         }
 
-        public virtual JSONObject AsObject {
-            get {
+        public virtual JSONObject AsObject
+        {
+            get
+            {
                 return this as JSONObject;
             }
         }
@@ -415,8 +436,10 @@ namespace SimpleJSON
 
         [ThreadStatic]
         private static StringBuilder m_EscapeBuilder;
-        internal static StringBuilder EscapeBuilder {
-            get {
+        internal static StringBuilder EscapeBuilder
+        {
+            get
+            {
                 if (m_EscapeBuilder == null)
                     m_EscapeBuilder = new StringBuilder();
                 return m_EscapeBuilder;
@@ -615,14 +638,14 @@ namespace SimpleJSON
                                     Token.Append('\f');
                                     break;
                                 case 'u':
-                                {
-                                    string s = aJSON.Substring(i + 1, 4);
-                                    Token.Append((char)int.Parse(
-                                        s,
-                                        System.Globalization.NumberStyles.AllowHexSpecifier));
-                                    i += 4;
-                                    break;
-                                }
+                                    {
+                                        string s = aJSON.Substring(i + 1, 4);
+                                        Token.Append((char)int.Parse(
+                                            s,
+                                            System.Globalization.NumberStyles.AllowHexSpecifier));
+                                        i += 4;
+                                        break;
+                                    }
                                 default:
                                     Token.Append(C);
                                     break;
@@ -662,7 +685,8 @@ namespace SimpleJSON
     {
         private List<JSONNode> m_List = new List<JSONNode>();
         private bool inline = false;
-        public override bool Inline {
+        public override bool Inline
+        {
             get { return inline; }
             set { inline = value; }
         }
@@ -671,13 +695,16 @@ namespace SimpleJSON
         public override bool IsArray { get { return true; } }
         public override Enumerator GetEnumerator() { return new Enumerator(m_List.GetEnumerator()); }
 
-        public override JSONNode this[int aIndex] {
-            get {
+        public override JSONNode this[int aIndex]
+        {
+            get
+            {
                 if (aIndex < 0 || aIndex >= m_List.Count)
                     return new JSONLazyCreator(this);
                 return m_List[aIndex];
             }
-            set {
+            set
+            {
                 if (value == null)
                     value = JSONNull.CreateOrGet();
                 if (aIndex < 0 || aIndex >= m_List.Count)
@@ -687,16 +714,19 @@ namespace SimpleJSON
             }
         }
 
-        public override JSONNode this[string aKey] {
+        public override JSONNode this[string aKey]
+        {
             get { return new JSONLazyCreator(this); }
-            set {
+            set
+            {
                 if (value == null)
                     value = JSONNull.CreateOrGet();
                 m_List.Add(value);
             }
         }
 
-        public override int Count {
+        public override int Count
+        {
             get { return m_List.Count; }
         }
 
@@ -736,8 +766,10 @@ namespace SimpleJSON
             return node;
         }
 
-        public override IEnumerable<JSONNode> Children {
-            get {
+        public override IEnumerable<JSONNode> Children
+        {
+            get
+            {
                 foreach (JSONNode N in m_List)
                     yield return N;
             }
@@ -773,7 +805,8 @@ namespace SimpleJSON
         private Dictionary<string, JSONNode> m_Dict = new Dictionary<string, JSONNode>();
 
         private bool inline = false;
-        public override bool Inline {
+        public override bool Inline
+        {
             get { return inline; }
             set { inline = value; }
         }
@@ -784,14 +817,17 @@ namespace SimpleJSON
         public override Enumerator GetEnumerator() { return new Enumerator(m_Dict.GetEnumerator()); }
 
 
-        public override JSONNode this[string aKey] {
-            get {
+        public override JSONNode this[string aKey]
+        {
+            get
+            {
                 if (m_Dict.ContainsKey(aKey))
                     return m_Dict[aKey];
                 else
                     return new JSONLazyCreator(this, aKey);
             }
-            set {
+            set
+            {
                 if (value == null)
                     value = JSONNull.CreateOrGet();
                 if (m_Dict.ContainsKey(aKey))
@@ -801,13 +837,16 @@ namespace SimpleJSON
             }
         }
 
-        public override JSONNode this[int aIndex] {
-            get {
+        public override JSONNode this[int aIndex]
+        {
+            get
+            {
                 if (aIndex < 0 || aIndex >= m_Dict.Count)
                     return null;
                 return m_Dict.ElementAt(aIndex).Value;
             }
-            set {
+            set
+            {
                 if (value == null)
                     value = JSONNull.CreateOrGet();
                 if (aIndex < 0 || aIndex >= m_Dict.Count)
@@ -817,7 +856,8 @@ namespace SimpleJSON
             }
         }
 
-        public override int Count {
+        public override int Count
+        {
             get { return m_Dict.Count; }
         }
 
@@ -892,8 +932,10 @@ namespace SimpleJSON
             return aDefault;
         }
 
-        public override IEnumerable<JSONNode> Children {
-            get {
+        public override IEnumerable<JSONNode> Children
+        {
+            get
+            {
                 foreach (KeyValuePair<string, JSONNode> N in m_Dict)
                     yield return N.Value;
             }
@@ -939,9 +981,11 @@ namespace SimpleJSON
         public override Enumerator GetEnumerator() { return new Enumerator(); }
 
 
-        public override string Value {
+        public override string Value
+        {
             get { return m_Data; }
-            set {
+            set
+            {
                 m_Data = value;
             }
         }
@@ -986,20 +1030,24 @@ namespace SimpleJSON
         public override bool IsNumber { get { return true; } }
         public override Enumerator GetEnumerator() { return new Enumerator(); }
 
-        public override string Value {
+        public override string Value
+        {
             get { return m_Data.ToString(CultureInfo.InvariantCulture); }
-            set {
+            set
+            {
                 double v;
                 if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out v))
                     m_Data = v;
             }
         }
 
-        public override double AsDouble {
+        public override double AsDouble
+        {
             get { return m_Data; }
             set { m_Data = value; }
         }
-        public override long AsLong {
+        public override long AsLong
+        {
             get { return (long)m_Data; }
             set { m_Data = value; }
         }
@@ -1060,15 +1108,18 @@ namespace SimpleJSON
         public override bool IsBoolean { get { return true; } }
         public override Enumerator GetEnumerator() { return new Enumerator(); }
 
-        public override string Value {
+        public override string Value
+        {
             get { return m_Data.ToString(); }
-            set {
+            set
+            {
                 bool v;
                 if (bool.TryParse(value, out v))
                     m_Data = v;
             }
         }
-        public override bool AsBool {
+        public override bool AsBool
+        {
             get { return m_Data; }
             set { m_Data = value; }
         }
@@ -1123,11 +1174,13 @@ namespace SimpleJSON
         public override bool IsNull { get { return true; } }
         public override Enumerator GetEnumerator() { return new Enumerator(); }
 
-        public override string Value {
+        public override string Value
+        {
             get { return "null"; }
             set { }
         }
-        public override bool AsBool {
+        public override bool AsBool
+        {
             get { return false; }
             set { }
         }
@@ -1184,12 +1237,14 @@ namespace SimpleJSON
             return aVal;
         }
 
-        public override JSONNode this[int aIndex] {
+        public override JSONNode this[int aIndex]
+        {
             get { return new JSONLazyCreator(this); }
             set { Set(new JSONArray()).Add(value); }
         }
 
-        public override JSONNode this[string aKey] {
+        public override JSONNode this[string aKey]
+        {
             get { return new JSONLazyCreator(this, aKey); }
             set { Set(new JSONObject()).Add(aKey, value); }
         }
@@ -1228,30 +1283,36 @@ namespace SimpleJSON
             return 0;
         }
 
-        public override int AsInt {
+        public override int AsInt
+        {
             get { Set(new JSONNumber(0)); return 0; }
             set { Set(new JSONNumber(value)); }
         }
 
-        public override float AsFloat {
+        public override float AsFloat
+        {
             get { Set(new JSONNumber(0.0f)); return 0.0f; }
             set { Set(new JSONNumber(value)); }
         }
 
-        public override double AsDouble {
+        public override double AsDouble
+        {
             get { Set(new JSONNumber(0.0)); return 0.0; }
             set { Set(new JSONNumber(value)); }
         }
 
-        public override long AsLong {
-            get {
+        public override long AsLong
+        {
+            get
+            {
                 if (longAsString)
                     Set(new JSONString("0"));
                 else
                     Set(new JSONNumber(0.0));
                 return 0L;
             }
-            set {
+            set
+            {
                 if (longAsString)
                     Set(new JSONString(value.ToString()));
                 else
@@ -1259,16 +1320,19 @@ namespace SimpleJSON
             }
         }
 
-        public override bool AsBool {
+        public override bool AsBool
+        {
             get { Set(new JSONBool(false)); return false; }
             set { Set(new JSONBool(value)); }
         }
 
-        public override JSONArray AsArray {
+        public override JSONArray AsArray
+        {
             get { return Set(new JSONArray()); }
         }
 
-        public override JSONObject AsObject {
+        public override JSONObject AsObject
+        {
             get { return Set(new JSONObject()); }
         }
         internal override void WriteToStringBuilder(StringBuilder aSB, int aIndent, int aIndentInc, JSONTextMode aMode)

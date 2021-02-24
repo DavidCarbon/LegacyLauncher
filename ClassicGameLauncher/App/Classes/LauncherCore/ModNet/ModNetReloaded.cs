@@ -1,8 +1,8 @@
-﻿using GameLauncherReborn;
+﻿using ClassicGameLauncher.App.Classes.LauncherCore.Client.Web;
 using System;
 using System.Collections.Generic;
 
-namespace ClassicGameLauncher.App.Classes.ModNet
+namespace ClassicGameLauncher.App.Classes.LauncherCore.ModNet
 {
     public class MainJson {
         public string basePath { get; set; }

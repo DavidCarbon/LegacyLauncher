@@ -2,7 +2,7 @@
 using System.IO;
 using System.Windows.Forms;
 
-namespace ClassicGameLauncher.App.Classes.ModNet
+namespace ClassicGameLauncher.App.Classes.LauncherCore.ModNet
 {
     class ModNetLinksCleanup
     {

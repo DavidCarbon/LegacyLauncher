@@ -1,8 +1,11 @@
-﻿using ClassicGameLauncher.App.Classes.Hashes;
-using ClassicGameLauncher.App.Classes.ModNet;
+﻿using ClassicGameLauncher.App.Classes.LauncherCore.Client.Web;
+using ClassicGameLauncher.App.Classes.LauncherCore.Hashes;
+using ClassicGameLauncher.App.Classes.LauncherCore.Lists;
+using ClassicGameLauncher.App.Classes.LauncherCore.ModNet;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Windows.Forms;
 
 namespace ClassicGameLauncher
@@ -20,7 +23,7 @@ namespace ClassicGameLauncher
             {
                 MessageBox.Show("nfsw.exe not found! Please put this launcher in the game directory. " +
                     "If you don't have the game installed yet use the new launcher to install it (visit https://soapboxrace.world/)",
-                    "LegacyLauncher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             if (!canAccesGameData())
@@ -32,7 +35,7 @@ namespace ClassicGameLauncher
 
             if (SHA.HashFile("nfsw.exe") != "7C0D6EE08EB1EDA67D5E5087DDA3762182CDE4AC")
             { 
-                MessageBox.Show("Invalid file was detected, please restore original nfsw.exe", "LegacyLauncher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Invalid file was detected, please restore original nfsw.exe", UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             } 
             else 
             {
@@ -41,6 +44,11 @@ namespace ClassicGameLauncher
                     var linksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory + "\\.links");
                     ModNetLinksCleanup.CleanLinks(linksPath);
                 }
+
+                ServicePointManager.Expect100Continue = true;
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+
+                ServerListUpdater.GetList();
 
                 Application.Run(new Form1());
             }

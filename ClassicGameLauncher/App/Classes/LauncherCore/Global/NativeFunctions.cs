@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace ClassicGameLauncher.App.Classes.Global
+namespace ClassicGameLauncher.App.Classes.LauncherCore.Global
 {
     internal static class Kernel32
     {

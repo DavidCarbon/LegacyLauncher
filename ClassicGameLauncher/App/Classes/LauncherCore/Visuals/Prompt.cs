@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
-namespace GameLauncher.App.Classes {
-    public static class Prompt {
-        public static string ShowDialog(string text, string caption) {
-            Form prompt = new Form() {
+namespace ClassicGameLauncher.App.Classes.LauncherCore.Visuals
+{
+    public static class Prompt
+    {
+        public static string ShowDialog(string text, string caption)
+        {
+            Form prompt = new Form()
+            {
                 Width = 415,
                 Height = 180,
                 FormBorderStyle = FormBorderStyle.FixedDialog,

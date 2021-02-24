@@ -1,11 +1,10 @@
-﻿using ClassicGameLauncher.App.Classes;
-using ClassicGameLauncher.App.Classes.Global;
-using ClassicGameLauncher.App.Classes.Hashes;
-using ClassicGameLauncher.App.Classes.ModNet;
-using GameLauncher.App.Classes;
-using GameLauncher.App.Classes.Auth;
-using GameLauncherReborn;
-using SimpleJSON;
+﻿using ClassicGameLauncher.App.Classes.LauncherCore.Client.Auth;
+using ClassicGameLauncher.App.Classes.LauncherCore.Client.Web;
+using ClassicGameLauncher.App.Classes.LauncherCore.Global;
+using ClassicGameLauncher.App.Classes.LauncherCore.Hashes;
+using ClassicGameLauncher.App.Classes.LauncherCore.Visuals;
+using ClassicGameLauncher.App.Classes.LauncherCore.ModNet;
+using ClassicGameLauncher.App.Classes.LauncherCore.Lists.JSON;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +14,8 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using ClassicGameLauncher.App.Classes.LauncherCore;
+using ClassicGameLauncher.App.Classes.LauncherCore.Lists;
 
 namespace ClassicGameLauncher
 {
@@ -38,7 +39,7 @@ namespace ClassicGameLauncher
         /* END SpeedBug Timer */
 
         /* START GetServerInformation Cache */
-        SimpleJSON.JSONNode result;
+        JSONNode result;
         /* END GetServerInformation Cache  */
 
         public Form1() {
@@ -50,28 +51,12 @@ namespace ClassicGameLauncher
             actionText.Text = "Ready!";
         }
 
-        private void Form1_Load(object sender, EventArgs e) {
-            var response = "";
-            try {
-                WebClient wc = new WebClient();
-                string serverurl = "http://api2-sbrw.davidcarbon.download/serverlist.txt";
-                response = wc.DownloadString(serverurl);
-            } catch (Exception) { }
-
+        private void Form1_Load(object sender, EventArgs e) 
+        {
             serverText.DisplayMember = "Text";
             serverText.ValueMember = "Value";
 
-            List<Object> items = new List<Object>();
-
-            String[] substrings = response.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
-            foreach (var substring in substrings) {
-                if (!String.IsNullOrEmpty(substring)) {
-                    String[] substrings22 = substring.Split(new string[] { ";" }, StringSplitOptions.None);
-                    items.Add(new { Text = substrings22[0], Value = substrings22[1] });
-                }
-            }
-
-            serverText.DataSource = items;
+            serverText.DataSource = ServerListUpdater.ServerList;
             serverText.SelectedIndex = 0;
         }
 
@@ -87,7 +72,7 @@ namespace ClassicGameLauncher
                 var stringToUri = new Uri(serverText.SelectedValue.ToString() + "/GetServerInformation");
                 String serverdata = serverval.DownloadString(stringToUri);
 
-                result = SimpleJSON.JSON.Parse(serverdata);
+                result = JSON.Parse(serverdata);
 
                 actionText.Text = "Players on server: " + result["onlineNumber"];
 
@@ -140,14 +125,14 @@ namespace ClassicGameLauncher
 
                 if (String.IsNullOrEmpty(Tokens.Error)) {
                     if (!String.IsNullOrEmpty(Tokens.Warning)) {
-                        MessageBox.Show(null, Tokens.Warning, "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(null, Tokens.Warning, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
 
                     //TODO: MODS GOES HERE
                     DoModNetJob();
                     //
                 } else {
-                    MessageBox.Show(null, Tokens.Error, "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(null, Tokens.Error, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     actionText.Text = (String.IsNullOrEmpty(Tokens.Error)) ? "An error occurred." : Tokens.Error;
                 }
             }
@@ -185,12 +170,12 @@ namespace ClassicGameLauncher
             }
 
             if (!String.IsNullOrEmpty(Tokens.Success)) {
-                MessageBox.Show(null, Tokens.Success, "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(null, Tokens.Success, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 actionText.Text = Tokens.Success;
 
                 tabControl1.Visible = true;
             } else {
-                MessageBox.Show(null, Tokens.Error, "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(null, Tokens.Error, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 actionText.Text = Tokens.Error;
             }
         }
@@ -205,18 +190,7 @@ namespace ClassicGameLauncher
             return Regex.IsMatch(email, theEmailPattern);
         }
 
-        public void launchGame() {
-           
-            ProcessStartInfo psi = new ProcessStartInfo();
-
-            psi.WorkingDirectory = Directory.GetCurrentDirectory();
-            psi.FileName = "nfsw.exe";
-            psi.Arguments = "EU " + Tokens.IPAddress + " " + Tokens.LoginToken + " " + Tokens.UserId;
-
-            Process.Start(psi);
-        }
-
-        private void LaunchGame(Form x)
+        private void LaunchGame()
         {
             actionText.Text = "Launching game...";
             Application.DoEvents();
@@ -270,7 +244,7 @@ namespace ClassicGameLauncher
                         secondsToShutDownNamed = "Waiting for event to finish.";
                     }
 
-                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + serverText.SelectedValue.ToString() + " | Launcher Build: " + ProductVersion + " | Force Restart In: " + secondsToShutDownNamed);
+                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + serverText.SelectedItem.ToString() + " | Launcher Build: " + ProductVersion + " | Force Restart In: " + secondsToShutDownNamed);
                 }
 
                 --secondsToShutDown;
@@ -297,47 +271,44 @@ namespace ClassicGameLauncher
                     }
                     else
                     {
-                        x.BeginInvoke(new Action(() =>
+                        String errorMsg = "Game Crash with exitcode: " + exitCode.ToString() + " (0x" + exitCode.ToString("X") + ")";
+                        if (exitCode == -1073741819) errorMsg = "Game Crash: Access Violation (0x" + exitCode.ToString("X") + ")";
+                        if (exitCode == -1073740940) errorMsg = "Game Crash: Heap Corruption (0x" + exitCode.ToString("X") + ")";
+                        if (exitCode == -1073740791) errorMsg = "Game Crash: Stack buffer overflow (0x" + exitCode.ToString("X") + ")";
+                        if (exitCode == -805306369) errorMsg = "Game Crash: Application Hang (0x" + exitCode.ToString("X") + ")";
+                        if (exitCode == -1073741515) errorMsg = "Game Crash: Missing dependency files (0x" + exitCode.ToString("X") + ")";
+                        if (exitCode == -1073740972) errorMsg = "Game Crash: Debugger crash (0x" + exitCode.ToString("X") + ")";
+                        if (exitCode == -1073741676) errorMsg = "Game Crash: Division by Zero (0x" + exitCode.ToString("X") + ")";
+                        if (exitCode == 1) errorMsg = "The process nfsw.exe was killed via Task Manager";
+                        if (exitCode == 2137) errorMsg = "Launcher killed your game to prevent SpeedBugging.";
+                        if (exitCode == -3) errorMsg = "The Server was unable to resolve the request";
+                        if (exitCode == -4) errorMsg = "Another instance is already executed";
+                        if (exitCode == -5) errorMsg = "DirectX Device was not found. Please install GPU Drivers before playing";
+                        if (exitCode == -6) errorMsg = "Server was unable to resolve your request";
+                        //ModLoader
+                        if (exitCode == 2) errorMsg = "ModNet: Game was launched with invalid command line parameters.";
+                        if (exitCode == 3) errorMsg = "ModNet: .links file should not exist upon startup!";
+                        if (exitCode == 4) errorMsg = "ModNet: An Unhandled Error Appeared";
+                        actionText.Text = errorMsg.ToUpper();
+                        if (_nfswPid != 0)
                         {
-                            x.WindowState = FormWindowState.Normal;
-                            x.Opacity = 1;
-                            x.ShowInTaskbar = true;
-                            String errorMsg = "Game Crash with exitcode: " + exitCode.ToString() + " (0x" + exitCode.ToString("X") + ")";
-                            if (exitCode == -1073741819) errorMsg = "Game Crash: Access Violation (0x" + exitCode.ToString("X") + ")";
-                            if (exitCode == -1073740940) errorMsg = "Game Crash: Heap Corruption (0x" + exitCode.ToString("X") + ")";
-                            if (exitCode == -1073740791) errorMsg = "Game Crash: Stack buffer overflow (0x" + exitCode.ToString("X") + ")";
-                            if (exitCode == -805306369) errorMsg = "Game Crash: Application Hang (0x" + exitCode.ToString("X") + ")";
-                            if (exitCode == -1073741515) errorMsg = "Game Crash: Missing dependency files (0x" + exitCode.ToString("X") + ")";
-                            if (exitCode == -1073740972) errorMsg = "Game Crash: Debugger crash (0x" + exitCode.ToString("X") + ")";
-                            if (exitCode == -1073741676) errorMsg = "Game Crash: Division by Zero (0x" + exitCode.ToString("X") + ")";
-                            if (exitCode == 1) errorMsg = "The process nfsw.exe was killed via Task Manager";
-                            if (exitCode == 2137) errorMsg = "Launcher killed your game to prevent SpeedBugging.";
-                            if (exitCode == -3) errorMsg = "The Server was unable to resolve the request";
-                            if (exitCode == -4) errorMsg = "Another instance is already executed";
-                            if (exitCode == -5) errorMsg = "DirectX Device was not found. Please install GPU Drivers before playing";
-                            if (exitCode == -6) errorMsg = "Server was unable to resolve your request";
-                            //ModLoader
-                            if (exitCode == 2) errorMsg = "ModNet: Game was launched with invalid command line parameters.";
-                            if (exitCode == 3) errorMsg = "ModNet: .links file should not exist upon startup!";
-                            if (exitCode == 4) errorMsg = "ModNet: An Unhandled Error Appeared";
-                            actionText.Text = errorMsg.ToUpper();
-                            if (_nfswPid != 0)
+                            try
                             {
-                                try
-                                {
-                                    Process.GetProcessById(_nfswPid).Kill();
-                                }
-                                catch { /* ignored */ }
+                                Process.GetProcessById(_nfswPid).Kill();
                             }
+                            catch { /* ignored */ }
+                        }
 
-                            DialogResult restartApp = MessageBox.Show(null, errorMsg + "\nWould you like to restart the launcher?", "GameLauncher", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                            if (restartApp == DialogResult.Yes)
-                            {
-                                Application.Restart();
-                                Application.ExitThread();
-                            }
+                        DialogResult restartApp = MessageBox.Show(null, errorMsg + "\nWould you like to restart the launcher?", "GameLauncher", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        if (restartApp == DialogResult.Yes)
+                        {
+                            Application.Restart();
+                            Application.ExitThread();
+                        }
+                        else
+                        {
                             Application.Exit();
-                        }));
+                        }
                     }
                 };
             }
@@ -365,7 +336,7 @@ namespace ClassicGameLauncher
         }
 
         public void DoModNetJob() {
-            if (!Directory.Exists("modules")) Directory.Delete("modules", true);
+            if (Directory.Exists("modules")) Directory.Delete("modules", true);
             if (!Directory.Exists("scripts")) Directory.CreateDirectory("scripts");
 
             String[] RemoveAllFiles = new string[] { "modules/udpcrc.soapbox.module", "modules/udpcrypt1.soapbox.module", "modules/udpcrypt2.soapbox.module", 
@@ -425,12 +396,12 @@ namespace ClassicGameLauncher
                         Application.DoEvents();
                     }
 
-                    SimpleJSON.JSONNode MainJson = SimpleJSON.JSON.Parse(jsonModNet);
+                    JSONNode MainJson = JSON.Parse(jsonModNet);
 
                     Uri newIndexFile = new Uri(MainJson["basePath"] + "/index.json");
                     String jsonindex = new WebClient().DownloadString(newIndexFile);
 
-                    SimpleJSON.JSONNode IndexJson = SimpleJSON.JSON.Parse(jsonindex);
+                    JSONNode IndexJson = JSON.Parse(jsonindex);
 
 
                     String path = Path.Combine("MODS", MDFive.HashPassword(MainJson["serverID"]).ToLower());
@@ -457,8 +428,7 @@ namespace ClassicGameLauncher
                     }
                     else
                     {
-                        LaunchGame(null);
-                        //launchGame();
+                        LaunchGame();
                     }
                 } catch (Exception ex) {
                     MessageBox.Show(ex.Message);
@@ -467,8 +437,7 @@ namespace ClassicGameLauncher
             else 
             {
                 //Yikes from me Coders - DavidCarbon
-                LaunchGame(null);
-                //launchGame();
+                LaunchGame();
             }
         }
 
@@ -492,8 +461,7 @@ namespace ClassicGameLauncher
                         isDownloadingModNetFiles = false;
                         if (modFilesDownloadUrls.Any() == false)
                         {
-                            LaunchGame(null);
-                            //launchGame();
+                            LaunchGame();
                         }
                         else
                         {
@@ -517,12 +485,12 @@ namespace ClassicGameLauncher
             if (!string.IsNullOrEmpty(result["WebRecoveryUrl"]))
             {
                 Process.Start(result["WebRecoveryUrl"]);
-                MessageBox.Show(null, "A browser window has been opened to complete password recovery on " + result["ServerName"], "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(null, "A browser window has been opened to complete password recovery on " + serverText.SelectedItem.ToString(), "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             else
             {
-                string send = Prompt.ShowDialog("Please specify your email address.", "LegacyLauncher");
+                string send = Prompt.ShowDialog("Please specify your email address.", UserAgent.AgentAltName);
 
                 if (send != String.Empty)
                 {
@@ -551,7 +519,7 @@ namespace ClassicGameLauncher
                         responseString = "Failed to send email!";
                     }
 
-                    MessageBox.Show(null, responseString, "GameLauncher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(null, responseString, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }

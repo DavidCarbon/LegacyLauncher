@@ -3,13 +3,13 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ClassicGameLauncher.App.Classes.Hashes
+namespace ClassicGameLauncher.App.Classes.LauncherCore.Hashes
 {
-    class SHATwoFiveSix
+    class MDFive
     {
         public static string HashPassword(string input)
         {
-            HashAlgorithm algorithm = SHA256.Create();
+            HashAlgorithm algorithm = MD5.Create();
             StringBuilder sb = new StringBuilder();
             foreach (byte b in algorithm.ComputeHash(Encoding.UTF8.GetBytes(input)))
             {
@@ -23,13 +23,12 @@ namespace ClassicGameLauncher.App.Classes.Hashes
         {
             if (!File.Exists(filename)) return String.Empty;
 
-            SHA256 sha256 = new SHA256CryptoServiceProvider();
-
+            MD5 md5 = new MD5CryptoServiceProvider();
             byte[] retVal = new byte[] { };
 
             using (var test = File.OpenRead(filename))
             {
-                retVal = sha256.ComputeHash(test);
+                retVal = md5.ComputeHash(test);
             }
 
             StringBuilder sb = new StringBuilder();
