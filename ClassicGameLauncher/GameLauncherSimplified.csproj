@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{DB3302EE-37FF-4312-831B-C0F549E7D8C2}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>ClassicGameLauncher</RootNamespace>
-    <AssemblyName>ClassicGameLauncher</AssemblyName>
+    <RootNamespace>GameLauncherSimplified</RootNamespace>
+    <AssemblyName>GameLauncherSimplified</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

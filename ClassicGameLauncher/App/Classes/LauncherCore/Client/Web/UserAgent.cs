@@ -6,8 +6,8 @@ namespace ClassicGameLauncher.App.Classes.LauncherCore.Client.Web
     {
         public static string ProjectLink = "(+https://github.com/SoapBoxRaceWorld/LegacyLauncher)";
         public static string ProjectAltLink = "WinForms (+https://github.com/SoapBoxRaceWorld/LegacyLauncher)";
-        public static string AgentName = "GameLauncher-Legacy";
-        public static string AgentAltName = "GameLauncherLegacy";
+        public static string AgentName = "GameLauncher-Simplified";
+        public static string AgentAltName = "GameLauncherSimplified";
         public static string Build = Application.ProductVersion;
 
 
