@@ -187,7 +187,13 @@ namespace ClassicGameLauncher
 
         private void button2_Click(object sender, EventArgs e) 
         {
-            if (!validateEmail(registerEmail.Text)) 
+            if (SelectedServerName == "WORLDUNITED OFFICIAL")
+            {
+                Process.Start(result["homePageUrl"]);
+                MessageBox.Show(null, "A browser window has been opened to complete registration on " + SelectedServerName, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            else if (!validateEmail(registerEmail.Text)) 
             {
                 actionText.Text = "Please type your email!";
             } 
@@ -226,18 +232,24 @@ namespace ClassicGameLauncher
             Tokens.IPAddress = ServerDropDownList.SelectedValue.ToString();
             Tokens.ServerName = ServerDropDownList.SelectedItem.ToString();
 
-            if (_modernAuthSupport == false) {
+            if (_modernAuthSupport == false)
+            {
                 ClassicAuth.Register(registerEmail.Text, SHA.HashPassword(registerPassword.Text), token);
-            } else {
+            }
+            else
+            {
                 ModernAuth.Register(registerEmail.Text, registerPassword.Text, token);
             }
 
-            if (!String.IsNullOrEmpty(Tokens.Success)) {
+            if (!String.IsNullOrEmpty(Tokens.Success))
+            {
                 MessageBox.Show(null, Tokens.Success, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 actionText.Text = Tokens.Success;
 
                 tabControl1.Visible = true;
-            } else {
+            }
+            else
+            {
                 MessageBox.Show(null, Tokens.Error, UserAgent.AgentAltName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 actionText.Text = Tokens.Error;
             }
@@ -278,15 +290,8 @@ namespace ClassicGameLauncher
 
             nfswProcess.ProcessorAffinity = (IntPtr)processorAffinity;
 
-            AntiCheat.process_id = nfswProcess.Id;
-
-            if (nfswProcess != null)
-            {
-                AntiCheat.MemoryChecks();
-            }
-
             //TIMER HERE
-            int secondsToShutDown = (result["secondsToShutDown"].AsInt != 0) ? result["secondsToShutDown"].AsInt : 2 * 60 * 60;
+            int secondsToShutDown = (result["secondsToShutDown"].AsInt == 0) ? result["secondsToShutDown"].AsInt : 2 * 60 * 60;
             System.Timers.Timer shutdowntimer = new System.Timers.Timer();
             shutdowntimer.Elapsed += (x2, y2) =>
             {
@@ -294,14 +299,8 @@ namespace ClassicGameLauncher
 
                 if (secondsToShutDown <= 0)
                 {
-                    foreach (var oneProcess in allOfThem)
-                    {
-                        Process.GetProcessById(oneProcess.Id).Kill();
-                    }
-                }
+                    _gameKilledBySpeedBugCheck = true;
 
-                if (CheatsWasUsed == true)
-                {
                     foreach (var oneProcess in allOfThem)
                     {
                         Process.GetProcessById(oneProcess.Id).Kill();
@@ -316,12 +315,7 @@ namespace ClassicGameLauncher
                     TimeSpan t = TimeSpan.FromSeconds(secondsToShutDown);
                     string secondsToShutDownNamed = string.Format("{0:D2}:{1:D2}:{2:D2}", t.Hours, t.Minutes, t.Seconds);
 
-                    if (secondsToShutDown == 0)
-                    {
-                        secondsToShutDownNamed = "Waiting for event to finish.";
-                    }
-
-                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + SelectedServerName + " | Launcher Build: " + ProductVersion + " | Force Restart In: " + secondsToShutDownNamed + " | Debug: IP - " + SelectedServerIP + " NAME - " + ServerDropDownList.SelectedItem.ToString());
+                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + SelectedServerName + " | Launcher Build: " + ProductVersion + " | Force Restart In: " + secondsToShutDownNamed);
                 }
 
                 --secondsToShutDown;
@@ -453,10 +447,12 @@ namespace ClassicGameLauncher
             
             String jsonModNet = ModNetReloaded.ModNetSupported(ServerDropDownList.SelectedValue.ToString());
 
-            if (jsonModNet != String.Empty) {
+            if (jsonModNet != String.Empty) 
+            {
                 actionText.Text = "Detecting ModNetSupport for " + ServerDropDownList.SelectedItem.ToString();
 
-                try {
+                try 
+                {
                     try { if (File.Exists("lightfx.dll")) File.Delete("lightfx.dll"); } catch { }
 
                     /* Get Remote ModNet list to process for checking required ModNet files are present and current */
