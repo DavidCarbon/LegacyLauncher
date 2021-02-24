@@ -1,4 +1,4 @@
-﻿using ClassicGameLauncher.App.Classes.Client.Web;
+﻿using ClassicGameLauncher.App.Classes.LauncherCore.Client.Web;
 using System;
 using System.IO;
 using System.Net;
