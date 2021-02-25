@@ -14,8 +14,8 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using ClassicGameLauncher.App.Classes.LauncherCore;
 using ClassicGameLauncher.App.Classes.LauncherCore.Lists;
+using GameLauncherSimplified.App.Classes.LauncherCore;
 
 namespace ClassicGameLauncher
 {
@@ -35,9 +35,9 @@ namespace ClassicGameLauncher
         /* END ModNet Global Functions */
 
         /* START SpeedBug Timer */
-        public static bool _gameKilledBySpeedBugCheck = false;
+        public static bool GameKilledBySpeedBugCheck = false;
         private int _nfswPid;
-
+        public static int secondsToShutDown = 0;
         public static bool CheatsWasUsed = false;
         /* END SpeedBug Timer */
 
@@ -51,6 +51,8 @@ namespace ClassicGameLauncher
         public static string SelectedServerIPRaw = "http://localhost";
         /* END Selected Server Cache */
 
+        private static string GameFiles = AppDomain.CurrentDomain.BaseDirectory;
+        private static string LinksFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory + "\\.links");
         public Form1() 
         {
             InitializeComponent();
@@ -268,8 +270,7 @@ namespace ClassicGameLauncher
 
         private void LaunchGame()
         {
-            actionText.Text = "Launching game...";
-            Application.DoEvents();
+            WindowState = FormWindowState.Minimized;
 
             var args = "EU " + Tokens.IPAddress + " " + Tokens.LoginToken + " " + Tokens.UserId;
             var psi = new ProcessStartInfo();
@@ -290,8 +291,11 @@ namespace ClassicGameLauncher
 
             nfswProcess.ProcessorAffinity = (IntPtr)processorAffinity;
 
+            AntiCheat.process_id = nfswProcess.Id;
+            AntiCheat.Checks();
+
             //TIMER HERE
-            int secondsToShutDown = (result["secondsToShutDown"].AsInt == 0) ? result["secondsToShutDown"].AsInt : 2 * 60 * 60;
+            secondsToShutDown = (result["secondsToShutDown"].AsInt == 0) ? result["secondsToShutDown"].AsInt : 2 * 60 * 60;
             System.Timers.Timer shutdowntimer = new System.Timers.Timer();
             shutdowntimer.Elapsed += (x2, y2) =>
             {
@@ -299,7 +303,7 @@ namespace ClassicGameLauncher
 
                 if (secondsToShutDown <= 0)
                 {
-                    _gameKilledBySpeedBugCheck = true;
+                    GameKilledBySpeedBugCheck = true;
 
                     foreach (var oneProcess in allOfThem)
                     {
@@ -315,7 +319,7 @@ namespace ClassicGameLauncher
                     TimeSpan t = TimeSpan.FromSeconds(secondsToShutDown);
                     string secondsToShutDownNamed = string.Format("{0:D2}:{1:D2}:{2:D2}", t.Hours, t.Minutes, t.Seconds);
 
-                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + SelectedServerName + " | Launcher Build: " + ProductVersion + " | Force Restart In: " + secondsToShutDownNamed);
+                    User32.SetWindowText((IntPtr)p, "NEED FOR SPEED™ WORLD | Server: " + SelectedServerName + " | " + UserAgent.WindowTextForGame + " | Force Restart In: " + secondsToShutDownNamed);
                 }
 
                 --secondsToShutDown;
@@ -334,25 +338,20 @@ namespace ClassicGameLauncher
                     _nfswPid = 0;
                     var exitCode = nfswProcess.ExitCode;
 
-                    if (_gameKilledBySpeedBugCheck == true) exitCode = 2137;
+                    if (GameKilledBySpeedBugCheck == true && CheatsWasUsed == false) exitCode = 2137;
+                    if (CheatsWasUsed == true) exitCode = 2017;
 
                     if (exitCode == 0)
                     {
-                        if (File.Exists(".links"))
-                        {
-                            var linksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory + "\\.links");
-                            ModNetLinksCleanup.CleanLinks(linksPath);
-                        }
-
-                        Application.Exit();
+                        CloseButton(null, null);
                     }
                     else
                     {
-                        if (File.Exists(".links"))
+                        try
                         {
-                            var linksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory + "\\.links");
-                            ModNetLinksCleanup.CleanLinks(linksPath);
+                            AntiCheat.thread.Abort();
                         }
+                        catch { }
 
                         String errorMsg = "Game Crash with exitcode: " + exitCode.ToString() + " (0x" + exitCode.ToString("X") + ")";
                         if (exitCode == -1073741819) errorMsg = "Game Crash: Access Violation (0x" + exitCode.ToString("X") + ")";
@@ -363,6 +362,7 @@ namespace ClassicGameLauncher
                         if (exitCode == -1073740972) errorMsg = "Game Crash: Debugger crash (0x" + exitCode.ToString("X") + ")";
                         if (exitCode == -1073741676) errorMsg = "Game Crash: Division by Zero (0x" + exitCode.ToString("X") + ")";
                         if (exitCode == 1) errorMsg = "The process nfsw.exe was killed via Task Manager";
+                        if (exitCode == 2017) errorMsg = "Server replied with Code: " + Tokens.UserId + " (0x" + exitCode.ToString("X") + ")";
                         if (exitCode == 2137) errorMsg = "Launcher killed your game to prevent SpeedBugging.";
                         if (exitCode == -3) errorMsg = "The Server was unable to resolve the request";
                         if (exitCode == -4) errorMsg = "Another instance is already executed";
@@ -372,7 +372,7 @@ namespace ClassicGameLauncher
                         if (exitCode == 2) errorMsg = "ModNet: Game was launched with invalid command line parameters.";
                         if (exitCode == 3) errorMsg = "ModNet: .links file should not exist upon startup!";
                         if (exitCode == 4) errorMsg = "ModNet: An Unhandled Error Appeared";
-                        actionText.Text = errorMsg.ToUpper();
+
                         if (_nfswPid != 0)
                         {
                             try
@@ -390,11 +390,21 @@ namespace ClassicGameLauncher
                         }
                         else
                         {
-                            Application.Exit();
+                            CloseButton(null,null);
                         }
                     }
                 };
             }
+        }
+
+        private void CloseButton(object sender, DownloadProgressChangedEventArgs e)
+        {
+            if (File.Exists(LinksFile))
+            {
+                ModNetLinksCleanup.CleanLinks(LinksFile);
+            }
+
+            Close();
         }
 
         private string FormatFileSize(long byteCount) 
@@ -426,6 +436,7 @@ namespace ClassicGameLauncher
             ServerDropDownList.Enabled = false;
             ButtonLogin.Enabled = false;
             ButtonRegister.Enabled = false;
+            ForgotPassLink.Enabled = false;
 
             if (Directory.Exists("modules")) Directory.Delete("modules", true);
             if (!Directory.Exists("scripts")) Directory.CreateDirectory("scripts");
@@ -521,6 +532,7 @@ namespace ClassicGameLauncher
                     }
                     else
                     {
+                        actionText.Text = "Launching game...";
                         LaunchGame();
                     }
                 } catch (Exception ex) {
@@ -530,6 +542,7 @@ namespace ClassicGameLauncher
             else 
             {
                 //Yikes from me Coders - DavidCarbon
+                actionText.Text = "Launching game...";
                 LaunchGame();
             }
         }
@@ -554,6 +567,7 @@ namespace ClassicGameLauncher
                         isDownloadingModNetFiles = false;
                         if (modFilesDownloadUrls.Any() == false)
                         {
+                            actionText.Text = "Launching game...";
                             LaunchGame();
                         }
                         else

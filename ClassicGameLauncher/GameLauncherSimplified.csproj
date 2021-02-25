@@ -35,7 +35,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>nfsw.ico</ApplicationIcon>
+    <ApplicationIcon>NFSW.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -54,9 +54,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="App\Classes\LauncherCore\AntiCheat.cs" />
     <Compile Include="App\Classes\LauncherCore\Client\Auth\ClassicAuth.cs" />
     <Compile Include="App\Classes\LauncherCore\Client\Auth\ModernAuth.cs" />
     <Compile Include="App\Classes\LauncherCore\Client\Auth\Tokens.cs" />
+    <Compile Include="App\Classes\LauncherCore\Client\NFSW.cs" />
     <Compile Include="App\Classes\LauncherCore\Client\Web\UserAgent.cs" />
     <Compile Include="App\Classes\LauncherCore\Client\Web\WebRequest.cs">
       <SubType>Component</SubType>
@@ -106,8 +108,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="nfsw.ico" />
+    <Content Include="NFSW.ico" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
