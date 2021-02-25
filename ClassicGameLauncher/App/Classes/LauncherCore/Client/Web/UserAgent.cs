@@ -13,7 +13,7 @@ namespace ClassicGameLauncher.App.Classes.LauncherCore.Client.Web
 
 
         public static string UserAgentName = AgentName + " " + ProjectLink;
-        public static string WindowTextForGame = WindowTextForLauncher + ": " + Build;
+        public static string WindowTextForGame = WindowTextForLauncher + ": v" + Build;
         public static string UserAgentNameWithBuild = AgentAltName + " " + Build;
         public static string UserAgentHeaderName = AgentAltName + " " + Build + " " + ProjectAltLink;
     }
